@@ -34,7 +34,11 @@ jobs:
         shell: bash
         run: |
           python -m venv .venv
-          source .venv/bin/activate || .venv\Scripts\activate
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            source .venv/Scripts/activate
+          else
+            source .venv/bin/activate
+          fi
           pip install "setuptools>=61.0" "setuptools-scm>=8.0" "Cython>=3.0.0"
           python cythonize.py
 
@@ -92,7 +96,11 @@ jobs:
         shell: bash
         run: |
           python -m venv .venv
-          source .venv/bin/activate || .venv\Scripts\activate
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            source .venv/Scripts/activate
+          else
+            source .venv/bin/activate
+          fi
           pip install "setuptools>=61.0" "setuptools-scm>=8.0" "Cython>=3.0.0"
           python cythonize.py
 
@@ -154,7 +162,11 @@ jobs:
         shell: bash
         run: |
           python -m venv .venv
-          source .venv/bin/activate || .venv\Scripts\activate
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            source .venv/Scripts/activate
+          else
+            source .venv/bin/activate
+          fi
           pip install "setuptools>=61.0" "setuptools-scm>=8.0" "Cython>=3.0.0"
           python cythonize.py
 
@@ -208,7 +220,11 @@ jobs:
         shell: bash
         run: |
           python -m venv .venv
-          source .venv/bin/activate || .venv\Scripts\activate
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            source .venv/Scripts/activate
+          else
+            source .venv/bin/activate
+          fi
           pip install "setuptools>=61.0" "setuptools-scm>=8.0" "Cython>=3.0.0"
           python cythonize.py
 
@@ -258,7 +274,11 @@ jobs:
         shell: bash
         run: |
           python -m venv .venv
-          source .venv/bin/activate || .venv\Scripts\activate
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            source .venv/Scripts/activate
+          else
+            source .venv/bin/activate
+          fi
           pip install "setuptools>=61.0" "setuptools-scm>=8.0" "Cython>=3.0.0"
           python cythonize.py
 

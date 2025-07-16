@@ -49,7 +49,11 @@ jobs:
         shell: bash
         run: |
           python -m venv .venv-build
-          source .venv-build/bin/activate || .venv-build\Scripts\activate
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            source .venv-build/Scripts/activate
+          else
+            source .venv-build/bin/activate
+          fi
           pip install "setuptools>=61.0" "setuptools-scm>=8.0" "Cython>=3.0.0"
           python cythonize.py
 
