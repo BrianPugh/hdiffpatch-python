@@ -56,7 +56,7 @@ def generate_c_extension():
         },
     )
 
-    print("✅ Cython files compiled to C++")
+    print("SUCCESS: Cython files compiled to C++")
     print("Generated: hdiffpatch/_c_extension.cpp")
 
 
