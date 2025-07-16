@@ -1,4 +1,4 @@
-# Don't manually change, let poetry-dynamic-versioning handle it.
+# Don't manually change, let setuptools-scm handle it.
 __version__ = "0.0.0"
 
 __all__ = [

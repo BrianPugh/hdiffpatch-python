@@ -236,7 +236,7 @@ dependencies = [
     { name = "attrs" },
 ]
 
-[package.optional-dependencies]
+[package.dev-dependencies]
 debug = [
     { name = "ipdb" },
     { name = "line-profiler" },
@@ -250,27 +250,22 @@ dev = [
     { name = "pytest-mock" },
 ]
 
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-]
-
 [package.metadata]
-requires-dist = [
-    { name = "attrs", specifier = ">=21.3.0" },
-    { name = "coverage", extras = ["toml"], marker = "extra == 'dev'", specifier = ">=5.1" },
-    { name = "cython", marker = "extra == 'dev'", specifier = ">=1.0.0" },
-    { name = "ipdb", marker = "extra == 'debug'", specifier = ">=0.13.9" },
-    { name = "line-profiler", marker = "extra == 'debug'", specifier = ">=3.5.1" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=2.16.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.1.2" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=3.0.0" },
-    { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.7.0" },
-]
-provides-extras = ["dev", "debug"]
+requires-dist = [{ name = "attrs", specifier = ">=21.3.0" }]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=8.4.1" }]
+debug = [
+    { name = "ipdb", specifier = ">=0.13.9" },
+    { name = "line-profiler", specifier = ">=3.5.1" },
+]
+dev = [
+    { name = "coverage", extras = ["toml"], specifier = ">=5.1" },
+    { name = "cython", specifier = ">=3.1.2" },
+    { name = "pre-commit", specifier = ">=2.16.0" },
+    { name = "pytest", specifier = ">=8.4.1" },
+    { name = "pytest-cov", specifier = ">=3.0.0" },
+    { name = "pytest-mock", specifier = ">=3.7.0" },
+]
 
 [[package]]
 name = "identify"

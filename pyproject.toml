@@ -1,29 +1,19 @@
-[project]
-name = "hdiffpatch"
-requires-python = ">=3.9"
-
 [build-system]
 requires = [
-    "poetry-core>=1.0.0,<2.0.0",
-    "poetry-dynamic-versioning>=1.0.1",
-    "Cython>=3.0.0",
     "setuptools>=61.0",
+    "setuptools-scm>=8.0",
+    "Cython>=3.0.0",
 ]
-build-backend = "poetry_dynamic_versioning.backend"
+build-backend = "setuptools.build_meta"
 
-[tool.poetry-dynamic-versioning]
-enable = true
-vcs = "git"
-style = "semver"
-
-[tool.poetry]
+[project]
 name = "hdiffpatch"
-version = "0.0.0" # Do not change, let poetry-dynamic-versioning handle it.
-homepage = "https://github.com/BrianPugh/hdiffpatch-python"
-repository = "https://github.com/BrianPugh/hdiffpatch-python"
-license = "Apache-2.0"
+dynamic = ["version"]
+requires-python = ">=3.9"
+urls = {homepage = "https://github.com/BrianPugh/hdiffpatch-python", repository = "https://github.com/BrianPugh/hdiffpatch-python"}
+license = {text = "Apache-2.0"}
 description = "Python wrapper around HDiffPatch C++ library for efficient binary diff/patch operations."
-authors = ["Brian Pugh"]
+authors = [{name = "Brian Pugh"}]
 readme = "README.md"
 keywords = [
     "binary",
@@ -51,35 +41,21 @@ classifiers = [
     "Topic :: System :: Archiving :: Compression",
     "Topic :: Utilities",
 ]
-packages = [{ include = "hdiffpatch" }]
-include = ["hdiffpatch/*.so", "hdiffpatch/*.pyd"] # Compiled extensions
+dependencies = [
+    "attrs>=21.3.0",
+]
 
-[tool.poetry.build]
-script = 'build.py'
-generate-setup-file = false
+[tool.setuptools_scm]
+version_scheme = "python-simplified-semver"
+local_scheme = "node-and-date"
 
-[tool.poetry.scripts]
+[tool.setuptools]
+packages = ["hdiffpatch"]
+package-data = {"hdiffpatch" = ["*.so", "*.pyd"]}
+zip-safe = false
 
-[tool.poetry.dependencies]
-# Be as loose as possible if writing a library.
-python = "^3.9"
-attrs = ">=21.3.0"
+[project.scripts]
 
-
-[tool.poetry.group.dev.dependencies]
-cython = ">=1.0.0"
-coverage = { extras = ["toml"], version = ">=5.1" }
-pre_commit = ">=2.16.0"
-pytest = ">=7.1.2"
-pytest-cov = ">=3.0.0"
-pytest-mock = ">=3.7.0"
-
-[tool.poetry.group.debug]
-optional = true
-
-[tool.poetry.group.debug.dependencies]
-ipdb = ">=0.13.9"
-line_profiler = ">=3.5.1"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -175,7 +151,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.flake8-bugbear]
-extend-immutable-calls = ["chr", "typer.Argument", "typer.Option"]
+extend-immutable-calls = ["chr"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
@@ -203,11 +179,25 @@ staticmethod-decorators = ["pydantic.validator", "pydantic.root_validator"]
 keep-runtime-typing = true
 
 [tool.codespell]
-skip = 'poetry.lock,'
+skip = 'uv.lock,'
 
 [tool.creosote]
 venvs = [".venv"]
 paths = ["hdiffpatch"]
 deps-file = "pyproject.toml"
-sections = ["tool.poetry.dependencies"]
+sections = ["project.dependencies"]
 exclude-deps = ["rich", "typing-extensions"]
+
+[dependency-groups]
+dev = [
+    "cython>=3.1.2",
+    "coverage[toml]>=5.1",
+    "pre-commit>=2.16.0",
+    "pytest>=8.4.1",
+    "pytest-cov>=3.0.0",
+    "pytest-mock>=3.7.0",
+]
+debug = [
+    "ipdb>=0.13.9",
+    "line-profiler>=3.5.1",
+]
