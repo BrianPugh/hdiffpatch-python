@@ -53,9 +53,6 @@ packages = ["hdiffpatch"]
 package-data = {"hdiffpatch" = ["*.so", "*.pyd"]}
 zip-safe = false
 
-[project.scripts]
-
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
