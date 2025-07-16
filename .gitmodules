@@ -1,0 +1,24 @@
+[submodule "hdiffpatch/_c_src/HDiffPatch"]
+	path = hdiffpatch/_c_src/HDiffPatch
+	url = git@github.com:sisong/HDiffPatch.git
+[submodule "hdiffpatch/_c_src/libmd5"]
+	path = hdiffpatch/_c_src/libmd5
+	url = https://github.com/sisong/libmd5.git
+[submodule "hdiffpatch/_c_src/lzma"]
+	path = hdiffpatch/_c_src/lzma
+	url = https://github.com/sisong/lzma.git
+[submodule "hdiffpatch/_c_src/zstd"]
+	path = hdiffpatch/_c_src/zstd
+	url = https://github.com/sisong/zstd.git
+[submodule "hdiffpatch/_c_src/zlib"]
+	path = hdiffpatch/_c_src/zlib
+	url = https://github.com/sisong/zlib.git
+[submodule "hdiffpatch/_c_src/bzip2"]
+	path = hdiffpatch/_c_src/bzip2
+	url = https://github.com/sisong/bzip2.git
+[submodule "hdiffpatch/_c_src/libdeflate"]
+	path = hdiffpatch/_c_src/libdeflate
+	url = https://github.com/sisong/libdeflate.git
+[submodule "hdiffpatch/_c_src/tamp"]
+	path = hdiffpatch/_c_src/tamp
+	url = https://github.com/BrianPugh/tamp.git
