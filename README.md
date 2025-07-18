@@ -22,7 +22,8 @@ For development installation:
 ```bash
 git clone https://github.com/BrianPugh/hdiffpatch-python.git
 cd hdiffpatch-python
-poetry install
+uv sync
+uv run python rebuild.py  # Build Cython extensions
 ```
 
 ## Quick Start
@@ -343,5 +344,5 @@ In this example, using **hdiffpatch** resulted in a ~3x smaller update when comp
 To reproduce these results:
 
 ```bash
-poetry run python tools/micropython-binary-demo.py
+uv run python tools/micropython-binary-demo.py
 ```
