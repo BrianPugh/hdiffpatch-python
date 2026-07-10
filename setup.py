@@ -3,10 +3,29 @@
 
 import os
 import platform
+import sys
 from pathlib import Path
 
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
+
+
+def ensure_cythonized():
+    """Generate _c_extension.cpp from the .pyx source when missing or stale."""
+    root = Path(__file__).parent
+    pyx = root / "hdiffpatch" / "_c_extension.pyx"
+    cpp = root / "hdiffpatch" / "_c_extension.cpp"
+    if not pyx.exists():  # building from a tree that only ships the .cpp
+        return
+    if cpp.exists() and cpp.stat().st_mtime >= pyx.stat().st_mtime:
+        return
+    sys.path.insert(0, str(root))
+    from cythonize import generate_c_extension
+
+    generate_c_extension()
+
+
+ensure_cythonized()
 
 
 class CustomBuildExt(build_ext):
