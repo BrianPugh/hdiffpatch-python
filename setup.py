@@ -232,16 +232,13 @@ def get_compile_args():
 
         # Add performance optimizations if enabled
         if enable_aggressive_opts:
-            extra_compile_args.extend(
-                [
-                    "-funroll-loops",  # Unroll loops for better performance
-                    "-ffast-math",  # Enable fast math optimizations
-                ]
-            )
+            extra_compile_args.append("-funroll-loops")  # Unroll loops for better performance
 
-            # Platform-specific optimizations
+            # ISA extensions beyond the x86-64 baseline would SIGILL on older
+            # CPUs, so only use them for local (non-redistributed) builds.
+            building_wheels_for_distribution = os.environ.get("CIBUILDWHEEL", "0") == "1"
             machine = platform.machine().lower()
-            if machine in ["x86_64", "amd64"]:
+            if machine in ["x86_64", "amd64"] and not building_wheels_for_distribution:
                 extra_compile_args.extend(["-msse4.2", "-mpopcnt"])
 
         # Enable threading support
