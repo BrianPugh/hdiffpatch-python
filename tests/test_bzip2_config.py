@@ -13,13 +13,16 @@ class TestBZip2ConfigClass:
         """Test default BZip2Config construction."""
         config = BZip2Config()
         assert config.level == 9
-        assert config.work_factor == 30
 
     def test_custom_construction(self):
         """Test BZip2Config construction with custom parameters."""
-        config = BZip2Config(level=6, work_factor=100)
+        config = BZip2Config(level=6)
         assert config.level == 6
-        assert config.work_factor == 100
+
+    def test_work_factor_removed(self):
+        """Test that the former no-op work_factor parameter is rejected."""
+        with pytest.raises(TypeError):
+            BZip2Config(work_factor=30)  # type: ignore[call-arg]
 
 
 class TestBZip2ConfigValidation:
@@ -43,23 +46,6 @@ class TestBZip2ConfigValidation:
         with pytest.raises(TypeError, match="'level' must be <class 'int'>"):
             BZip2Config(level=level)  # type: ignore[arg-type]
 
-    @pytest.mark.parametrize("factor", [0, 30, 100, 250])
-    def test_work_factor_valid_values(self, factor):
-        """Test work factor accepts valid values."""
-        config = BZip2Config(work_factor=factor)
-        assert config.work_factor == factor
-
-    @pytest.mark.parametrize("factor", [-1, 251])
-    def test_work_factor_invalid_range(self, factor):
-        """Test work factor rejects out-of-range values."""
-        with pytest.raises(ValueError, match="'work_factor' must be"):
-            BZip2Config(work_factor=factor)
-
-    def test_work_factor_invalid_type(self):
-        """Test work factor rejects invalid types."""
-        with pytest.raises(TypeError, match="'work_factor' must be <class 'int'>"):
-            BZip2Config(work_factor="30")  # type: ignore[arg-type]
-
 
 class TestBZip2ConfigClassmethods:
     """Test BZip2Config classmethod constructors."""
@@ -67,34 +53,10 @@ class TestBZip2ConfigClassmethods:
     @pytest.mark.parametrize(
         "method_name,expected_attrs",
         [
-            (
-                "fast",
-                {
-                    "level": 1,
-                    "work_factor": 0,
-                },
-            ),
-            (
-                "balanced",
-                {
-                    "level": 6,
-                    "work_factor": 30,
-                },
-            ),
-            (
-                "best_compression",
-                {
-                    "level": 9,
-                    "work_factor": 100,
-                },
-            ),
-            (
-                "minimal_memory",
-                {
-                    "level": 1,
-                    "work_factor": 0,
-                },
-            ),
+            ("fast", {"level": 1}),
+            ("balanced", {"level": 6}),
+            ("best_compression", {"level": 9}),
+            ("minimal_memory", {"level": 1}),
         ],
     )
     def test_classmethod_configs(self, method_name, expected_attrs):
@@ -109,9 +71,9 @@ class TestBZip2ConfigMethods:
 
     def test_hashability(self):
         """Test that BZip2Config objects are hashable."""
-        config1 = BZip2Config(level=6, work_factor=50)
-        config2 = BZip2Config(level=6, work_factor=50)
-        config3 = BZip2Config(level=9, work_factor=50)
+        config1 = BZip2Config(level=6)
+        config2 = BZip2Config(level=6)
+        config3 = BZip2Config(level=9)
 
         # Test that equal objects have same hash
         assert hash(config1) == hash(config2)
@@ -196,28 +158,13 @@ class TestBZip2ConfigIntegration:
         result = hdiffpatch.apply(highly_compressible_data["old"], diff_data)
         assert result == highly_compressible_data["new"]
 
-    @pytest.mark.parametrize("work_factor", [0, 30, 100])
-    def test_diff_work_factors(self, binary_data, work_factor):
-        """Test diff() with different work factors."""
-        config = BZip2Config(work_factor=work_factor)
-
-        # Test that diff accepts different work factors
-        diff_data = hdiffpatch.diff(binary_data["old"], binary_data["new"], compression=config)
-
-        assert isinstance(diff_data, bytes)
-        assert len(diff_data) > 0
-
-        # Test round-trip
-        result = hdiffpatch.apply(binary_data["old"], diff_data)
-        assert result == binary_data["new"]
-
 
 class TestBZip2ConfigRoundTrip:
     """Test round-trip functionality with BZip2Config."""
 
     def test_round_trip_with_config(self, simple_text_data):
         """Test complete round-trip with BZip2Config."""
-        config = BZip2Config(level=6, work_factor=50)
+        config = BZip2Config(level=6)
 
         # Test complete round-trip with BZip2Config
         diff_data = hdiffpatch.diff(simple_text_data["old"], simple_text_data["new"], compression=config)

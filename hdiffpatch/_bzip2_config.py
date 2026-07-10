@@ -9,33 +9,25 @@ from ._base_config import BaseConfig
 class BZip2Config(BaseConfig):
     """Configuration for bzip2 compression parameters.
 
-    This class allows fine-grained control over bzip2 compression behavior,
-    including compression level and work factor for controlling compression
-    speed and memory usage.
+    This class allows control over bzip2 compression behavior via the
+    compression level, which trades speed for compression ratio and
+    memory usage.
 
     Parameters
     ----------
     level : int, default=9
         Compression level (1-9). Higher values give better
         compression but are slower. 1 = fastest, 9 = best compression.
-    work_factor : int, default=30
-        Work factor (0-250). Controls how the compression algorithm
-        behaves when dealing with worst-case scenarios. 0 = use default,
-        higher values use more time but may achieve better compression.
 
     Examples
     --------
-    Fast compression with minimal memory usage
+    Fast compression
 
-    >>> config = BZip2Config(level=1, work_factor=0)
+    >>> config = BZip2Config(level=1)
 
-    Best compression with default work factor
+    Best compression
 
     >>> config = BZip2Config(level=9)
-
-    Balanced compression with increased work factor
-
-    >>> config = BZip2Config(level=6, work_factor=100)
     """
 
     level: int = attrs.field(
@@ -44,14 +36,6 @@ class BZip2Config(BaseConfig):
             attrs.validators.instance_of(int),
             attrs.validators.ge(1),
             attrs.validators.le(9),
-        ),
-    )
-    work_factor: int = attrs.field(
-        default=30,
-        validator=attrs.validators.and_(
-            attrs.validators.instance_of(int),
-            attrs.validators.ge(0),
-            attrs.validators.le(250),
         ),
     )
 
@@ -64,7 +48,7 @@ class BZip2Config(BaseConfig):
         BZip2Config
             Configuration optimized for speed
         """
-        return cls(level=1, work_factor=0)
+        return cls(level=1)
 
     @classmethod
     def balanced(cls) -> "BZip2Config":
@@ -75,7 +59,7 @@ class BZip2Config(BaseConfig):
         BZip2Config
             Configuration with balanced speed/compression tradeoff
         """
-        return cls(level=6, work_factor=30)
+        return cls(level=6)
 
     @classmethod
     def best_compression(cls) -> "BZip2Config":
@@ -86,7 +70,7 @@ class BZip2Config(BaseConfig):
         BZip2Config
             Configuration optimized for best compression
         """
-        return cls(level=9, work_factor=100)
+        return cls(level=9)
 
     @classmethod
     def minimal_memory(cls) -> "BZip2Config":
@@ -97,4 +81,4 @@ class BZip2Config(BaseConfig):
         BZip2Config
             Configuration with minimal memory usage
         """
-        return cls(level=1, work_factor=0)
+        return cls(level=1)

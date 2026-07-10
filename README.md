@@ -239,7 +239,7 @@ config = hdiffpatch.LzmaConfig.minimal_memory()
 Fine-grained control over bzip2 compression:
 
 ```python
-config = hdiffpatch.BZip2Config(level=9, work_factor=30)
+config = hdiffpatch.BZip2Config(level=9)
 
 # Preset configurations
 config = hdiffpatch.BZip2Config.fast()
@@ -251,7 +251,6 @@ config = hdiffpatch.BZip2Config.minimal_memory()
 **Parameters:**
 
 * `level` (1-9): Compression level
-* `work_factor` (0-250): Work factor for worst-case scenarios
 
 #### TampConfig
 
