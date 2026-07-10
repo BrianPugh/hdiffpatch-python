@@ -1,7 +1,6 @@
 # Regular tests
 #
-# Use this to ensure your tests are passing on every push and PR (skipped on
-# pushes which only affect documentation).
+# Use this to ensure your tests are passing on every push and PR.
 #
 # You should make sure you run jobs on at least the *oldest* and the *newest*
 # versions of python that your codebase is intended to support.
@@ -14,7 +13,39 @@ on:
       - main
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  # Lint doesn't depend on OS or python version; run it once.
+  lint:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+          enable-cache: true
+
+      - name: Install library
+        run: uv sync --locked
+
+      - name: Cache pre-commit
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/pre-commit/
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      - name: Pre-commit run
+        run: uv run pre-commit run --show-diff-on-failure --color=always --all-files
+
   test:
     timeout-minutes: 45
     defaults:
@@ -24,66 +55,34 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-13, windows-latest]
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
     env:
       OS: ${{ matrix.os }}
       PYTHON: ${{ matrix.python-version }}
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
-      - name: Set up python ${{ matrix.python-version }}
-        id: setup-python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
+          enable-cache: true
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
-
-      - name: Install build dependencies and cythonize
-        shell: bash
-        run: |
-          python -m venv .venv-build
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            source .venv-build/Scripts/activate
-          else
-            source .venv-build/bin/activate
-          fi
-          pip install "setuptools>=61.0" "setuptools-scm>=8.0" "Cython>=3.0.0"
-          python cythonize.py
-
-      - name: Install library and dependencies
-        run: uv sync
-
-      - name: Cache pre-commit
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pre-commit/
-          key: pre-commit-${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('.pre-commit-config.yaml') }}
-
-      - name: Pre-commit run
-        run: uv run pre-commit run --show-diff-on-failure --color=always --all-files
-
-      - name: Check tests folder existence
-        id: check_test_files
-        uses: andstor/file-existence-action@v3
-        with:
-          files: "tests"
+      - name: Install library
+        run: uv sync --locked
 
       - name: Run tests
-        if: steps.check_test_files.outputs.files_exists == 'true'
         run: |
           uv run python -m pytest --cov=hdiffpatch --cov-report term --cov-report xml --junitxml=testresults.xml
           uv run coverage report
 
       - name: Upload coverage to Codecov
-        if: steps.check_test_files.outputs.files_exists == 'true'
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: unittests
