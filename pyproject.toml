@@ -54,6 +54,12 @@ packages = ["hdiffpatch"]
 package-data = {"hdiffpatch" = ["*.so", "*.pyd"]}
 zip-safe = false
 
+# The [project] table flips setuptools' include_package_data default to true,
+# which would otherwise sweep every git-tracked file under hdiffpatch/ (the
+# entire vendored _c_src tree, ~27MB uncompressed) into binary wheels.
+[tool.setuptools.exclude-package-data]
+hdiffpatch = ["_c_src/*", "*.pyx", "*.cpp", "*.html"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
