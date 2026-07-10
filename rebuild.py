@@ -12,8 +12,6 @@ def rebuild_extensions():
     setup.py regenerates C++ from Cython automatically whenever
     _c_extension.pyx is newer than the generated _c_extension.cpp.
     """
-    print("Rebuilding hdiffpatch...")
-
     result = subprocess.run(  # noqa: S603
         ["uv", "sync", "--reinstall-package", "hdiffpatch"],  # noqa: S607
         cwd=Path(__file__).parent,
