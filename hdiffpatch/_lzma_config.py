@@ -1,7 +1,5 @@
 """LzmaConfig and Lzma2Config classes for configuring LZMA compression parameters."""
 
-from typing import Union
-
 import attrs
 
 from ._base_config import BaseConfig

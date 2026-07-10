@@ -1,7 +1,5 @@
 """Unit tests for tamp compression plugin functionality."""
 
-import pytest
-
 import hdiffpatch
 
 

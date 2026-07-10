@@ -1,7 +1,5 @@
 """BZip2Config class for configuring bzip2 compression parameters."""
 
-from typing import Union
-
 import attrs
 
 from ._base_config import BaseConfig

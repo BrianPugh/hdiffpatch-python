@@ -1,7 +1,5 @@
 """TampConfig class for configuring tamp compression parameters."""
 
-from typing import Optional
-
 import attrs
 
 from ._base_config import BaseConfig

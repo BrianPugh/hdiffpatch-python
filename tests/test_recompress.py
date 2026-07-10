@@ -1,7 +1,5 @@
 """Unit tests for recompress functionality with comprehensive round-trip validation."""
 
-from typing import cast
-
 import pytest
 
 import hdiffpatch
