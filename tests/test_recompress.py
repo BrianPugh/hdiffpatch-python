@@ -252,7 +252,7 @@ class TestRecompressEdgeCases:
         """Test recompress with corrupted diff data."""
         corrupted_data = b"this is not a valid diff"
 
-        with pytest.raises(hdiffpatch.HDiffPatchError, match="Failed to detect diff format"):
+        with pytest.raises(hdiffpatch.HDiffPatchError, match="Cannot recompress legacy uncompressed diff format"):
             hdiffpatch.recompress(corrupted_data, compression=hdiffpatch.COMPRESSION_ZLIB)
 
     def test_recompress_empty_data(self):

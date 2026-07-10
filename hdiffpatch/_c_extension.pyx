@@ -605,9 +605,12 @@ cdef hpatch_StreamPos_t calculate_new_data_size(const unsigned char* diff_ptr, c
 
         # After processing all covers, the total new data size is:
         # newPosBack + remaining newDataDiff data
-        remaining_newDataDiff = newDataDiffSize - newDataDiff_used
-        if remaining_newDataDiff < 0:
+        # (operands are unsigned; guard before subtracting so a malformed diff
+        # can't wrap around to a huge value)
+        if newDataDiff_used > newDataDiffSize:
             remaining_newDataDiff = 0
+        else:
+            remaining_newDataDiff = newDataDiffSize - newDataDiff_used
 
         total_size = newPosBack + remaining_newDataDiff
 
@@ -685,7 +688,12 @@ cdef hpatch_BOOL _vector_output_write(const hpatch_TStreamOutput* stream,
     """C callback function for writing to vector output stream."""
     cdef VectorOutputStream self_obj = <VectorOutputStream>stream.streamImport
     cdef size_t data_size = data_end - data
-    cdef size_t required_size = writeToPos + data_size
+    cdef hpatch_StreamPos_t required_size_64 = writeToPos + data_size
+    # Stream positions are 64-bit; reject writes beyond what size_t can
+    # address (only reachable on 32-bit builds).
+    if required_size_64 != <hpatch_StreamPos_t><size_t>required_size_64:
+        return 0  # hpatch_FALSE
+    cdef size_t required_size = <size_t>required_size_64
 
     try:
         # Resize vector if necessary
@@ -764,7 +772,7 @@ cdef CompressionPlugin _resolve_compression_to_plugin(compression: Union[Compres
         # String-based compression - normalize and validate
         compression_str = str(compression).lower()
         if compression_str not in _valid_compression_types:
-            raise ValueError(f"Invalid compression type: {compression_str}. Valid options: {', '.join(_valid_compression_types)}")
+            raise ValueError(f"Invalid compression type: {compression_str}. Valid options: {', '.join(sorted(_valid_compression_types))}")
 
         if compression_str == COMPRESSION_NONE:
             return None
@@ -837,12 +845,10 @@ def diff(
     if validate:
         try:
             result_data = apply(old_data, diff_bytes)
-            if result_data != new_data:
-                raise HDiffPatchError("Roundtrip validation failed: applying the diff to old_data does not produce new_data")
         except Exception as e:
-            if isinstance(e, HDiffPatchError) and "Roundtrip validation failed" in str(e):
-                raise
             raise HDiffPatchError(f"Roundtrip validation failed: {str(e)}") from e
+        if result_data != new_data:
+            raise HDiffPatchError("Roundtrip validation failed: applying the diff to old_data does not produce new_data")
 
     return diff_bytes
 
@@ -936,6 +942,10 @@ def apply(
         if new_ptr != NULL:
             free(new_ptr)
         return result_bytes
+    except (HDiffPatchError, MemoryError):
+        if new_ptr != NULL:
+            free(new_ptr)
+        raise
     except Exception as e:
         if new_ptr != NULL:
             free(new_ptr)
@@ -1024,6 +1034,8 @@ def recompress(
                 "diffs even when no compression is applied, which are supported by this function."
             )
 
+    except HDiffPatchError:
+        raise
     except Exception as e:
         raise HDiffPatchError(f"Failed to detect diff format: {str(e)}") from e
 
@@ -1064,5 +1076,7 @@ def recompress(
         result_vector = output_stream.get_vector()
         return PyBytes_FromStringAndSize(<char*>result_vector.data(), result_size)
 
+    except HDiffPatchError:
+        raise
     except Exception as e:
         raise HDiffPatchError(f"Recompression failed: {str(e)}") from e
