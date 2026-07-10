@@ -2,8 +2,6 @@
 
 from typing import cast
 
-import pytest
-
 import hdiffpatch
 
 

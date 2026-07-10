@@ -9,7 +9,6 @@ The output is formatted for easy inclusion in README documentation.
 
 import sys
 from pathlib import Path
-from typing import cast
 
 # Add the project root to the path so we can import hdiffpatch
 project_root = Path(__file__).parent.parent

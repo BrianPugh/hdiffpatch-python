@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Pre-compile Cython files to C++ for distribution."""
 
-import os
-import platform
 from pathlib import Path
 
 
