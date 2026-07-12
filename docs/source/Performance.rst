@@ -18,50 +18,15 @@ Benchmarks
 
 Diffing two consecutive MicroPython RPI_PICO firmware releases (~650 KB each, best of 5 runs, Apple M3). Absolute times vary by machine and input; the ratios are the point.
 
-.. list-table::
-   :header-rows: 1
-
-   * - compression
-     - diff (ms)
-     - apply (ms)
-     - recompress (ms)
-     - diff size
-     - % of new file
-   * - none
-     - 25.5
-     - 0.4
-     - —
-     - 161,041
-     - 24.1%
-   * - zlib
-     - 30.9
-     - 1.0
-     - 5.2
-     - 99,772
-     - 14.9%
-   * - lzma
-     - 36.5
-     - 3.3
-     - 10.9
-     - 92,647
-     - 13.9%
-   * - zstd
-     - 41.3
-     - 0.6
-     - 15.7
-     - 97,520
-     - 14.6%
-   * - bzip2
-     - 34.2
-     - 4.0
-     - 8.6
-     - 102,686
-     - 15.4%
-   * - tamp
-     - 40.5
-     - 1.1
-     - 15.1
-     - 110,711
-     - 16.6%
+===========  =========  ==========  ===============  =========  =============
+compression  diff (ms)  apply (ms)  recompress (ms)  diff size  % of new file
+===========  =========  ==========  ===============  =========  =============
+none              25.5         0.4                —    161,041          24.1%
+zlib              30.9         1.0              5.2     99,772          14.9%
+lzma              36.5         3.3             10.9     92,647          13.9%
+zstd              41.3         0.6             15.7     97,520          14.6%
+bzip2             34.2         4.0              8.6    102,686          15.4%
+tamp              40.5         1.1             15.1    110,711          16.6%
+===========  =========  ==========  ===============  =========  =============
 
 ``validate=True`` measured 26.0 ms against 25.5 ms with ``validate=False`` (uncompressed diff) — roughly 2% overhead.
