@@ -142,7 +142,7 @@ Apply a binary patch to reconstruct new data.
 ---
 
 ```python
-def recompress(diff_data, compression=None) -> bytes
+def recompress(diff_data, compression) -> bytes
 ```
 
 Recompress a diff with a different compression algorithm.
@@ -150,7 +150,7 @@ Recompress a diff with a different compression algorithm.
 **Parameters:**
 
 * `diff_data` (bytes): The diff data to recompress.
-* `compression` (str or config object, optional): Target compression type as string (`"none"`, `"zlib"`, `"lzma"`, `"lzma2"`, `"zstd"`, `"bzip2"`, `"tamp"`) or a compression configuration object. If None, removes compression.
+* `compression` (str or config object, required): Target compression type as string (`"none"`, `"zlib"`, `"lzma"`, `"lzma2"`, `"zstd"`, `"bzip2"`, `"tamp"`) or a compression configuration object. Pass `"none"` to strip compression.
 
 **Returns:** `bytes` - The recompressed diff data
 

@@ -956,7 +956,7 @@ def apply(
 
 def recompress(
     diff_data: bytes,
-    compression: Union[CompressionType, 'BaseConfig', None] = None
+    compression: Union[CompressionType, 'BaseConfig', None]
 ) -> bytes:
     """Recompress a diff with a different compression algorithm.
 
@@ -971,8 +971,9 @@ def recompress(
     ----------
     diff_data : bytes
         The diff data to recompress
-    compression : CompressionType, BaseConfig, or None, default=None
-        Target compression algorithm to use
+    compression : CompressionType, BaseConfig, or None
+        Target compression algorithm to use. Pass ``"none"`` (or ``None``)
+        to strip compression from the diff.
 
     Returns
     -------
