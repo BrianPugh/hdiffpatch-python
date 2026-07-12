@@ -124,7 +124,7 @@ static const TCompressPlugin_tamp tampCompressPlugin = {
     10,  // window
     8,   // literal
     0,   // use_custom_dictionary
-    0    // extended
+    1    // extended
 };
 
 //=============================================================================

@@ -13,13 +13,13 @@ class TestTampConfigClass:
         """Test default TampConfig construction."""
         config = TampConfig()
         assert config.window == 10
-        assert config.extended is False
+        assert config.extended is True
 
     def test_custom_construction(self):
         """Test TampConfig construction with custom parameters."""
-        config = TampConfig(window=12, extended=True)
+        config = TampConfig(window=12, extended=False)
         assert config.window == 12
-        assert config.extended is True
+        assert config.extended is False
 
 
 class TestTampConfigValidation:
@@ -225,19 +225,28 @@ class TestTampConfigRoundTrip:
         result = hdiffpatch.apply(unicode_data["old"], diff_data)
         assert result == unicode_data["new"]
 
-    def test_extended_differs_from_default(self, large_repetitive_data):
-        """Test that the extended format produces a different (v2) stream than the default."""
-        diff_default = hdiffpatch.diff(
-            large_repetitive_data["old"], large_repetitive_data["new"], compression=TampConfig()
+    def test_extended_formats_differ(self, large_repetitive_data):
+        """Test that extended (v2) and v1-compatible streams differ and both round-trip."""
+        diff_v1 = hdiffpatch.diff(
+            large_repetitive_data["old"], large_repetitive_data["new"], compression=TampConfig(extended=False)
         )
         diff_extended = hdiffpatch.diff(
             large_repetitive_data["old"], large_repetitive_data["new"], compression=TampConfig(extended=True)
         )
 
-        assert diff_default != diff_extended
+        assert diff_v1 != diff_extended
 
-        result = hdiffpatch.apply(large_repetitive_data["old"], diff_extended)
-        assert result == large_repetitive_data["new"]
+        for diff_data in (diff_v1, diff_extended):
+            result = hdiffpatch.apply(large_repetitive_data["old"], diff_data)
+            assert result == large_repetitive_data["new"]
+
+    def test_string_tamp_matches_default_config(self, large_repetitive_data):
+        """Test that compression="tamp" and TampConfig() produce identical output."""
+        diff_string = hdiffpatch.diff(large_repetitive_data["old"], large_repetitive_data["new"], compression="tamp")
+        diff_config = hdiffpatch.diff(
+            large_repetitive_data["old"], large_repetitive_data["new"], compression=TampConfig()
+        )
+        assert diff_string == diff_config
 
     @pytest.mark.parametrize(
         "config_method",
