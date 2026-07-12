@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-hdiffpatch-python is a high-performance Python wrapper around the [HDiffPatch](https://github.com/sisong/HDiffPatch) C++ library providing efficient binary diff/patch operations with comprehensive compression support. The project uses Cython for C++ integration and supports Python 3.9+. It is a library only — there is no CLI.
+hdiffpatch-python is a high-performance Python wrapper around the [HDiffPatch](https://github.com/sisong/HDiffPatch) C++ library providing efficient binary diff/patch operations with comprehensive compression support. The project uses Cython for C++ integration and supports Python 3.10+. It is a library only — there is no CLI.
 
 ## Development Commands
 
@@ -48,7 +48,7 @@ uv run pytest -k "compression"
 uv run pre-commit run --all-files
 ```
 
-Linting/typing is configured in `pyproject.toml`: ruff (line length 120, numpy docstring convention, target Python 3.9) and pyright (checks `tests/`).
+Linting/typing is configured in `pyproject.toml`: ruff (line length 120, numpy docstring convention, target Python 3.10) and pyright (checks `tests/`).
 
 ## Architecture
 

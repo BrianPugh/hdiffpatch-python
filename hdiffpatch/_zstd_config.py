@@ -1,7 +1,5 @@
 """ZStdConfig class for configuring zstd compression parameters."""
 
-from typing import Optional
-
 import attrs
 
 from ._base_config import BaseConfig
@@ -49,7 +47,7 @@ class ZStdConfig(BaseConfig):
             attrs.validators.le(22),
         ),
     )
-    window: Optional[int] = attrs.field(
+    window: int | None = attrs.field(
         default=None,
         validator=attrs.validators.optional(
             attrs.validators.and_(

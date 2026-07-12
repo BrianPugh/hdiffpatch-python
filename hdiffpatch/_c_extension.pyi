@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Literal, Union
+from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     from ._base_config import BaseConfig
@@ -22,7 +22,7 @@ class HDiffPatchError(Exception):
 def diff(
     old_data: bytes,
     new_data: bytes,
-    compression: Union[CompressionType, BaseConfig, None] = None,
+    compression: CompressionType | BaseConfig | None = None,
     *,
     validate: bool = True,
 ) -> bytes:
@@ -86,7 +86,7 @@ def apply(
 
 def recompress(
     diff_data: bytes,
-    compression: Union[CompressionType, BaseConfig, None] = None,
+    compression: CompressionType | BaseConfig | None = None,
 ) -> bytes:
     """Recompress a diff with a different compression algorithm.
 
