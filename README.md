@@ -4,7 +4,6 @@
 [![PyPI](https://img.shields.io/pypi/v/hdiffpatch.svg)](https://pypi.org/project/hdiffpatch/)
 [![ReadTheDocs](https://readthedocs.org/projects/hdiffpatch-python/badge/?version=latest)](https://hdiffpatch-python.readthedocs.io)
 [![GHA Status](https://github.com/BrianPugh/hdiffpatch-python/actions/workflows/tests.yaml/badge.svg?branch=main)](https://github.com/BrianPugh/hdiffpatch-python/actions?query=workflow%3Atests)
-[![Coverage](https://codecov.io/github/BrianPugh/hdiffpatch-python/coverage.svg?branch=main)](https://codecov.io/github/BrianPugh/hdiffpatch-python?branch=main)
 
 </div>
 
@@ -28,10 +27,11 @@ pip install hdiffpatch
 
 # Quick Start
 
-**hdiffpatch** primarily provides 2 simple functions:
+**hdiffpatch** primarily provides 3 simple functions:
 
 * `diff` for creating a patch.
 * `apply` for applying a patch.
+* `recompress` for changing an existing patch's compression.
 
 ```python
 import hdiffpatch
@@ -44,6 +44,10 @@ patch = hdiffpatch.diff(old, new, compression="zstd")
 
 # Later (e.g. on another device), reconstruct new from old + patch.
 assert hdiffpatch.apply(old, patch) == new
+
+# Re-encode an existing patch with a different compression algorithm.
+patch_lzma = hdiffpatch.recompress(patch, compression="lzma")
+assert hdiffpatch.apply(old, patch_lzma) == new
 ```
 
 A patch is typically much smaller than the new data itself, making **hdiffpatch** ideal for bandwidth-constrained applications like over-the-air firmware updates.
