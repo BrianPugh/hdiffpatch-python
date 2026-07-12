@@ -11,9 +11,10 @@ from collections.abc import Callable
 from pathlib import Path
 
 import hdiffpatch
+from hdiffpatch import CompressionType
 
 BINARIES = Path(__file__).parent.parent / "tests" / "binaries"
-COMPRESSIONS = ["none", "zlib", "lzma", "zstd", "bzip2", "tamp"]
+COMPRESSIONS: list[CompressionType] = ["none", "zlib", "lzma", "zstd", "bzip2", "tamp"]
 REPEATS = 5
 
 COLUMNS = ("compression", "diff (ms)", "apply (ms)", "recompress (ms)", "diff size", "% of new file")
@@ -51,7 +52,7 @@ def main() -> None:
 
     base = hdiffpatch.diff(old, new, compression="none", validate=False)
 
-    rows = [COLUMNS]
+    rows: list[tuple[str, ...]] = [COLUMNS]
     for compression in COMPRESSIONS:
         diff_data = hdiffpatch.diff(old, new, compression=compression, validate=False)
         t_diff = best_of(lambda c=compression: hdiffpatch.diff(old, new, compression=c, validate=False))
