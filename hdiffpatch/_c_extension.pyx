@@ -40,7 +40,7 @@ cdef extern from "libHDiffPatch/HDiff/diff.h":
     void hdiff_create_compressed_diff "create_compressed_diff"(const unsigned char* newData, const unsigned char* newData_end,
                                                              const unsigned char* oldData, const unsigned char* oldData_end,
                                                              vector[unsigned char]& out_diff,
-                                                             const hdiff_TCompress* compressPlugin)
+                                                             const hdiff_TCompress* compressPlugin) except + nogil
 
 cdef extern from "libHDiffPatch/HPatch/patch_types.h":
     ctypedef struct hpatch_TDecompress:
@@ -49,7 +49,7 @@ cdef extern from "libHDiffPatch/HPatch/patch_types.h":
 cdef extern from "libHDiffPatch/HPatch/patch.h":
     int patch(unsigned char* out_newData, unsigned char* out_newData_end,
              const unsigned char* oldData, const unsigned char* oldData_end,
-             const unsigned char* diff, const unsigned char* diff_end)
+             const unsigned char* diff, const unsigned char* diff_end) nogil
 
     hpatch_BOOL getCompressedDiffInfo_mem(hpatch_compressedDiffInfo* out_diffInfo,
                                          const unsigned char* compressedDiff,
@@ -58,7 +58,7 @@ cdef extern from "libHDiffPatch/HPatch/patch.h":
     hpatch_BOOL patch_decompress_mem(unsigned char* out_newData, unsigned char* out_newData_end,
                                      const unsigned char* oldData, const unsigned char* oldData_end,
                                      const unsigned char* compressedDiff, const unsigned char* compressedDiff_end,
-                                     hpatch_TDecompress* decompressPlugin)
+                                     hpatch_TDecompress* decompressPlugin) nogil
 
     ctypedef struct hpatch_TCover:
         hpatch_StreamPos_t oldPos
@@ -835,10 +835,13 @@ def diff(
 
     compression_plugin = _resolve_compression_to_plugin(compression)
 
-    if compression_plugin is None:  # No compression - use NULL plugin for HDIFF13& header format
-        hdiff_create_compressed_diff(new_ptr, new_end, old_ptr, old_end, diff_vector, <hdiff_TCompress*>0)
-    else:
-        hdiff_create_compressed_diff(new_ptr, new_end, old_ptr, old_end, diff_vector, compression_plugin.plugin)
+    # NULL plugin means no compression - HDIFF13& header format
+    cdef const hdiff_TCompress* compress_plugin_ptr = <hdiff_TCompress*>0
+    if compression_plugin is not None:
+        compress_plugin_ptr = compression_plugin.plugin
+
+    with nogil:
+        hdiff_create_compressed_diff(new_ptr, new_end, old_ptr, old_end, diff_vector, compress_plugin_ptr)
 
     diff_size = diff_vector.size()
     if diff_size == 0:
@@ -919,8 +922,9 @@ def apply(
 
             new_end = new_ptr + new_size
 
-            result = patch_decompress_mem(new_ptr, new_end, old_ptr, old_end,
-                                        diff_ptr, diff_end, <hpatch_TDecompress*>decompress_plugin)
+            with nogil:
+                result = patch_decompress_mem(new_ptr, new_end, old_ptr, old_end,
+                                              diff_ptr, diff_end, <hpatch_TDecompress*>decompress_plugin)
         else:
             # This is an uncompressed diff - calculate the new data size from covers
             new_size = calculate_new_data_size(diff_ptr, diff_end)
@@ -935,7 +939,8 @@ def apply(
                     raise MemoryError("Failed to allocate memory for patched data")
                 new_end = new_ptr + new_size
 
-            result = patch(new_ptr, new_end, old_ptr, old_end, diff_ptr, diff_end)
+            with nogil:
+                result = patch(new_ptr, new_end, old_ptr, old_end, diff_ptr, diff_end)
 
         if result == 0:
             raise HDiffPatchError("HDiffPatch patch operation failed")
