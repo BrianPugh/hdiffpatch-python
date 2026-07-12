@@ -19,6 +19,47 @@ from libc.stddef cimport size_t
 from libcpp.vector cimport vector
 from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AsString, PyBytes_Size
 
+# C++ -> Python exception translator.
+#
+# The HDiffPatch C++ core throws ``std::runtime_error`` (and, on OOM,
+# ``std::bad_alloc``) from internal stream code. A bare ``except +`` would map
+# these onto Python's builtin ``RuntimeError``/``MemoryError``, but the package
+# contract is that every diff/patch/compression failure raises
+# ``HDiffPatchError``. ``except +hdiffpatch_translate_exception`` on the extern
+# C++ declarations below routes those throws through this handler instead:
+# ``std::bad_alloc`` stays a ``MemoryError`` (never swallow OOM), everything
+# else becomes ``HDiffPatchError`` carrying the original ``what()`` message.
+# Cython calls the handler from inside the generated ``catch (...)`` block with
+# the GIL held, so ``throw;`` re-raises the in-flight exception for inspection.
+cdef extern from *:
+    """
+    #include <exception>
+    #include <new>
+    #include <Python.h>
+
+    static PyObject* __hdiffpatch_error_type = NULL;
+
+    static void hdiffpatch_register_error(PyObject* error_type) {
+        __hdiffpatch_error_type = error_type;
+    }
+
+    static void hdiffpatch_translate_exception() {
+        PyObject* error_type =
+            __hdiffpatch_error_type ? __hdiffpatch_error_type : PyExc_RuntimeError;
+        try {
+            throw;
+        } catch (const std::bad_alloc& exn) {
+            PyErr_SetString(PyExc_MemoryError, exn.what());
+        } catch (const std::exception& exn) {
+            PyErr_SetString(error_type, exn.what());
+        } catch (...) {
+            PyErr_SetString(error_type, "Unknown C++ exception raised by HDiffPatch");
+        }
+    }
+    """
+    void hdiffpatch_register_error(object error_type)
+    void hdiffpatch_translate_exception()
+
 cdef extern from "libHDiffPatch/HPatch/patch_types.h":
     ctypedef unsigned long long hpatch_StreamPos_t
     ctypedef int hpatch_BOOL
@@ -40,7 +81,7 @@ cdef extern from "libHDiffPatch/HDiff/diff.h":
     void hdiff_create_compressed_diff "create_compressed_diff"(const unsigned char* newData, const unsigned char* newData_end,
                                                              const unsigned char* oldData, const unsigned char* oldData_end,
                                                              vector[unsigned char]& out_diff,
-                                                             const hdiff_TCompress* compressPlugin) except + nogil
+                                                             const hdiff_TCompress* compressPlugin) except +hdiffpatch_translate_exception nogil
 
 cdef extern from "libHDiffPatch/HPatch/patch_types.h":
     ctypedef struct hpatch_TDecompress:
@@ -113,7 +154,7 @@ cdef extern from "libHDiffPatch/HDiff/diff.h":
                                hpatch_TDecompress* decompressPlugin,
                                const hpatch_TStreamOutput* out_diff,
                                const hdiff_TCompress* compressPlugin,
-                               hpatch_StreamPos_t out_diff_curPos) except +
+                               hpatch_StreamPos_t out_diff_curPos) except +hdiffpatch_translate_exception
 
     hpatch_StreamPos_t resave_single_compressed_diff(
         const hpatch_TStreamInput* in_diff,
@@ -122,7 +163,7 @@ cdef extern from "libHDiffPatch/HDiff/diff.h":
         const hdiff_TCompress* compressPlugin,
         const hpatch_singleCompressedDiffInfo* diffInfo,
         hpatch_StreamPos_t in_diff_curPos,
-        hpatch_StreamPos_t out_diff_curPos) except +
+        hpatch_StreamPos_t out_diff_curPos) except +hdiffpatch_translate_exception
 
 cdef extern from "compress_plugin_demo.h":
     extern const void* zlibCompressPlugin
@@ -219,6 +260,12 @@ _valid_compression_types = {"none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "t
 
 class HDiffPatchError(Exception):
     """Base exception for HDiffPatch operations."""
+
+
+# Hand the exception type to the C++ translator so C++ throws from the core
+# surface as HDiffPatchError. The translator holds a borrowed reference; the
+# class lives for the lifetime of the module, so no incref is required.
+hdiffpatch_register_error(HDiffPatchError)
 
 
 cdef const hdiff_TCompress* get_compress_plugin(str compression):
