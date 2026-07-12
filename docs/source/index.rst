@@ -1,5 +1,5 @@
-Welcome to hdiffpatch's documentation!
-======================================
+hdiffpatch
+==========
 
 .. include:: ../../README.md
    :parser: myst_parser.sphinx_
@@ -10,6 +10,7 @@ Welcome to hdiffpatch's documentation!
 
    self
    Installation
+   Performance
    api
 
 
