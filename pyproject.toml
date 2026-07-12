@@ -195,6 +195,8 @@ dev = [
     "pytest>=8.4.1",
     "pytest-cov>=3.0.0",
     "pytest-mock>=3.7.0",
+    "setuptools>=61.0",
+    "setuptools-scm>=8.0",
 ]
 debug = [
     "ipdb>=0.13.9",

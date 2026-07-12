@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Rebuild Cython extensions for development."""
 
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -22,9 +23,15 @@ def rebuild_extensions():
 
     print("Rebuilding Cython extensions...")
 
-    # Use pip to force rebuild the package
+    # The uv-managed venv has no pip, so prefer uv for the editable reinstall
+    uv = shutil.which("uv")
+    if uv:
+        install_cmd = [uv, "pip", "install", "-e", ".", "--force-reinstall", "--no-deps"]
+    else:
+        install_cmd = [sys.executable, "-m", "pip", "install", "-e", ".", "--force-reinstall", "--no-deps"]
+
     result = subprocess.run(  # noqa: S603
-        [sys.executable, "-m", "pip", "install", "-e", ".", "--force-reinstall", "--no-deps"], cwd=Path(__file__).parent
+        install_cmd, cwd=Path(__file__).parent
     )
 
     if result.returncode == 0:
