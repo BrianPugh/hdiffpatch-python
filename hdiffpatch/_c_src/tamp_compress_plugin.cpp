@@ -76,29 +76,39 @@ static hpatch_StreamPos_t _tamp_compress(const hdiff_TCompress* compressPlugin,
         if (readLen > (size_t)(in_data->streamSize - readFromPos))
             readLen = (size_t)(in_data->streamSize - readFromPos);
 
-        // Read data from input
+        // Read the whole chunk exactly once. in_data is HDiffPatch's
+        // TNewDataDiffStream, which generates diff bytes on the fly and only
+        // supports strictly sequential reads, so we must never re-read or rewind.
         if (!in_data->read(in_data, readFromPos, read_buf, read_buf + readLen))
             _compress_error_return("in_data->read()");
 
-        // Compress the chunk
-        size_t output_written = 0;
-        size_t input_consumed = 0;
-        res = tamp_compressor_compress(&compressor, compress_buf, kCompressBufSize,
-                                       &output_written, read_buf, readLen, &input_consumed);
+        // Drain the chunk in place. tamp_compressor_compress legitimately
+        // consumes only part of its input when the output buffer fills
+        // (TAMP_OUTPUT_FULL), which happens whenever incompressible data expands
+        // under literal encoding. Advance an offset into read_buf until the whole
+        // chunk is consumed, flushing output after each call.
+        size_t chunk_pos = 0;
+        while (chunk_pos < readLen) {
+            size_t output_written = 0;
+            size_t input_consumed = 0;
+            res = tamp_compressor_compress(&compressor, compress_buf, kCompressBufSize,
+                                           &output_written, read_buf + chunk_pos,
+                                           readLen - chunk_pos, &input_consumed);
 
-        if (res < 0) _compress_error_return("tamp_compressor_compress");
+            if (res < 0) _compress_error_return("tamp_compressor_compress");
 
-        // Write compressed data
-        if (output_written > 0) {
-            _stream_out_code_write(out_code, outStream_isCanceled, result, compress_buf, output_written);
+            if (output_written > 0) {
+                _stream_out_code_write(out_code, outStream_isCanceled, result, compress_buf, output_written);
+            }
+
+            // Guard against a no-progress infinite loop.
+            if (input_consumed == 0 && output_written == 0)
+                _compress_error_return("tamp_compressor_compress made no progress");
+
+            chunk_pos += input_consumed;
         }
 
-        readFromPos += input_consumed;
-
-        // If we didn't consume all input, we need to handle partial consumption
-        if (input_consumed < readLen) {
-            readFromPos -= (readLen - input_consumed);
-        }
+        readFromPos += readLen;
     }
 
     // Flush any remaining data
