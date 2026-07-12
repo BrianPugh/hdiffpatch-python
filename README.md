@@ -20,10 +20,9 @@ pip install hdiffpatch
 For development installation:
 
 ```bash
-git clone https://github.com/BrianPugh/hdiffpatch-python.git
+git clone --recursive https://github.com/BrianPugh/hdiffpatch-python.git
 cd hdiffpatch-python
-uv sync
-uv run python rebuild.py  # Build Cython extensions
+uv sync  # Builds the C extension; rerun rebuild.py only after editing Cython/C sources
 ```
 
 ## Quick Start

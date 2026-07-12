@@ -72,10 +72,11 @@ napoleon_type_aliases = None
 napoleon_attr_annotations = True
 
 # Autodoc
+# No undoc-members: the attrs config classes describe their fields in the
+# class docstring's Parameters section; bare attribute stubs add nothing.
 autodoc_default_options = {
     "members": True,
     "member-order": "bysource",
-    "undoc-members": True,
     "exclude-members": "__weakref__",
 }
 autoclass_content = "class"

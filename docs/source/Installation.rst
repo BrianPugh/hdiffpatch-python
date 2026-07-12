@@ -14,11 +14,12 @@ To install directly from github, you can run:
 
    python -m pip install git+https://github.com/BrianPugh/hdiffpatch-python.git
 
-For development, it's recommended to use uv:
+For development, it's recommended to use uv. The vendored C libraries are git submodules, so clone with ``--recursive``:
 
 .. code-block:: bash
 
-   git clone https://github.com/BrianPugh/hdiffpatch-python.git
+   git clone --recursive https://github.com/BrianPugh/hdiffpatch-python.git
    cd hdiffpatch-python
    uv sync
-   uv run python rebuild.py
+
+``uv sync`` builds the C extension; ``uv run python rebuild.py`` is only needed to rebuild after modifying the Cython or C sources.
