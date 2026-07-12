@@ -71,6 +71,7 @@ def get_sources():
     sources.extend((lib_path / "HPatch").rglob("*.c"))
     sources.extend((lib_path / "HPatch").rglob("*.cpp"))
     sources.extend((lib_path / "HPatchLite").rglob("*.c"))
+    sources.extend((base_path / "libParallel").rglob("*.c"))
     sources.extend((base_path / "libParallel").rglob("*.cpp"))
 
     # Compression plugin
@@ -182,6 +183,7 @@ def get_compile_args():
     # Common defines for all platforms
     common_defines = [
         "-DIS_NOTICE_compress_canceled=0",  # Suppress hdiffpatch compression info messages
+        "-D_IS_OUT_DIFF_INFO=0",  # Suppress hdiffpatch diff progress messages on stdout
         "-D__STDC_LIMIT_MACROS",  # Enable C99 limit macros in C++
         "-D__STDC_CONSTANT_MACROS",  # Enable C99 constant macros in C++
         "-D_ChecksumPlugin_md5",

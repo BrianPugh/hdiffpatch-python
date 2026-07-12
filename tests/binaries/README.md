@@ -1,4 +1,4 @@
-The following files were generated with `hdiffz` v4.8.0
+The following files were generated with `hdiffz` v5.0.1
 
 ```bash
 curl -O https://micropython.org/resources/firmware/RPI_PICO-20241129-v1.24.1.uf2

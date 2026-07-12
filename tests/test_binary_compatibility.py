@@ -1,7 +1,7 @@
 """Test binary compatibility with reference hdiffz binaries.
 
 Note: These tests check if our Python wrapper generates exactly the same
-binary output as the hdiffz v4.8.0 command-line tool. Differences may occur
+binary output as the hdiffz v5.0.1 command-line tool. Differences may occur
 due to:
 - Different HDiffPatch library versions
 - Different build configurations
