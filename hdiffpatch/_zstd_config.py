@@ -1,7 +1,5 @@
 """ZStdConfig class for configuring zstd compression parameters."""
 
-from typing import Optional
-
 import attrs
 
 from ._base_config import BaseConfig
@@ -23,22 +21,22 @@ class ZStdConfig(BaseConfig):
         Window size as log2. Must be between 10 and 27.
         Larger windows give better compression but use more memory.
         None uses zstd default based on compression level.
-    workers : int, default=0
-        Number of worker threads (0-200). 0 = single-threaded.
+    threads : int, default=1
+        Number of threads (1-200). 1 = single-threaded.
 
     Examples
     --------
     Fast compression with minimal memory usage
 
-    >>> config = ZStdConfig(level=1, workers=0)
+    >>> config = ZStdConfig(level=1, threads=1)
 
     Best compression for large files with multiple threads
 
-    >>> config = ZStdConfig(level=22, workers=4)
+    >>> config = ZStdConfig(level=22, threads=4)
 
     Balanced compression with custom window size
 
-    >>> config = ZStdConfig(level=6, window=20, workers=2)
+    >>> config = ZStdConfig(level=6, window=20, threads=2)
     """
 
     level: int = attrs.field(
@@ -49,7 +47,7 @@ class ZStdConfig(BaseConfig):
             attrs.validators.le(22),
         ),
     )
-    window: Optional[int] = attrs.field(
+    window: int | None = attrs.field(
         default=None,
         validator=attrs.validators.optional(
             attrs.validators.and_(
@@ -59,11 +57,11 @@ class ZStdConfig(BaseConfig):
             )
         ),
     )
-    workers: int = attrs.field(
-        default=0,
+    threads: int = attrs.field(
+        default=1,
         validator=attrs.validators.and_(
             attrs.validators.instance_of(int),
-            attrs.validators.ge(0),
+            attrs.validators.ge(1),
             attrs.validators.le(200),
         ),
     )
@@ -77,7 +75,7 @@ class ZStdConfig(BaseConfig):
         ZStdConfig
             Configuration optimized for speed
         """
-        return cls(level=1, workers=0)
+        return cls(level=1, threads=1)
 
     @classmethod
     def balanced(cls) -> "ZStdConfig":
@@ -88,7 +86,7 @@ class ZStdConfig(BaseConfig):
         ZStdConfig
             Configuration with balanced speed/compression tradeoff
         """
-        return cls(level=6, workers=2)
+        return cls(level=6, threads=2)
 
     @classmethod
     def best_compression(cls) -> "ZStdConfig":
@@ -99,7 +97,7 @@ class ZStdConfig(BaseConfig):
         ZStdConfig
             Configuration optimized for best compression
         """
-        return cls(level=22, window=27, workers=4)
+        return cls(level=22, window=27, threads=4)
 
     @classmethod
     def minimal_memory(cls) -> "ZStdConfig":
@@ -110,4 +108,4 @@ class ZStdConfig(BaseConfig):
         ZStdConfig
             Configuration with minimal memory usage
         """
-        return cls(level=3, window=10, workers=0)
+        return cls(level=3, window=10, threads=1)

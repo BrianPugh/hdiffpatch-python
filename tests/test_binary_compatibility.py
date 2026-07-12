@@ -126,3 +126,42 @@ def test_all_reference_diffs_can_be_applied_batch(firmware_files, reference_diff
     for compression_type, diff_data in reference_diffs.items():
         result = hdiffpatch.apply(old_data, diff_data)
         assert result == new_data, f"Reference {compression_type} diff did not reconstruct new data correctly"
+
+
+# Tamp diffs pinned at hdiffpatch-python v2.0.0 (tamp v2.3.0): one in the
+# extended (v2) format and one in the v1-compatible format. These guard
+# decoder backwards compatibility: future releases must always be able to
+# apply diffs produced by older releases in either format.
+@pytest.mark.parametrize(
+    "suffix",
+    [
+        "tamp",  # extended (v2) format, the default since v2.0.0
+        "tamp-v1",  # TampConfig(extended=False), decodable by tamp v1.x
+    ],
+)
+def test_pinned_tamp_diff_can_be_applied(firmware_files, test_binaries_dir, suffix):
+    """Test that pinned tamp diffs from prior releases remain applicable."""
+    diff_path = test_binaries_dir / f"RPI_PICO-20241129-v1.24.1_to_RPI_PICO-20250415-v1.25.0.hdiff.{suffix}"
+    diff_data = diff_path.read_bytes()
+
+    result = hdiffpatch.apply(firmware_files["old"], diff_data)
+    assert result == firmware_files["new"], f"Pinned {suffix} diff did not reconstruct new data correctly"
+
+
+def test_tamp_lazy_matching_compresses_smaller(firmware_files):
+    """Test that lazy matching produces a smaller diff than greedy matching.
+
+    Not guaranteed for arbitrary inputs, but deterministic for this fixed
+    firmware pair; both variants must also round-trip.
+    """
+    diff_lazy = hdiffpatch.diff(
+        firmware_files["old"], firmware_files["new"], compression=hdiffpatch.TampConfig(lazy_matching=True)
+    )
+    diff_greedy = hdiffpatch.diff(
+        firmware_files["old"], firmware_files["new"], compression=hdiffpatch.TampConfig(lazy_matching=False)
+    )
+
+    assert len(diff_lazy) < len(diff_greedy)
+
+    for diff_data in (diff_lazy, diff_greedy):
+        assert hdiffpatch.apply(firmware_files["old"], diff_data) == firmware_files["new"]

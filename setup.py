@@ -199,6 +199,7 @@ def get_compile_args():
         "-D_CompressPlugin_zlib",
         "-D_CompressPlugin_ldef",
         "-D_CompressPlugin_ldef_is_use_zlib",
+        "-DTAMP_LAZY_MATCHING=1",
     ]
 
     extra_compile_args = common_defines[:]

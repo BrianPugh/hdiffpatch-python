@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Python compat](https://img.shields.io/badge/%3E=python-3.9-blue.svg)
+![Python compat](https://img.shields.io/badge/%3E=python-3.10-blue.svg)
 [![PyPi](https://img.shields.io/pypi/v/hdiffpatch.svg)](https://pypi.python.org/pypi/hdiffpatch)
 [![GHA Status](https://github.com/BrianPugh/hdiffpatch-python/actions/workflows/tests.yaml/badge.svg?branch=main)](https://github.com/BrianPugh/hdiffpatch-python/actions?query=workflow%3Atests)
 [![Coverage](https://codecov.io/github/BrianPugh/hdiffpatch-python/coverage.svg?branch=main)](https://codecov.io/github/BrianPugh/hdiffpatch-python?branch=main)
@@ -11,7 +11,7 @@
 
 ## Installation
 
-**hdiffpatch** requires Python `>=3.9` and can be installed via:
+**hdiffpatch** requires Python `>=3.10` and can be installed via:
 
 ```bash
 pip install hdiffpatch
@@ -142,7 +142,7 @@ Apply a binary patch to reconstruct new data.
 ---
 
 ```python
-def recompress(diff_data, compression=None) -> bytes
+def recompress(diff_data, compression) -> bytes
 ```
 
 Recompress a diff with a different compression algorithm.
@@ -150,7 +150,7 @@ Recompress a diff with a different compression algorithm.
 **Parameters:**
 
 * `diff_data` (bytes): The diff data to recompress.
-* `compression` (str or config object, optional): Target compression type as string (`"none"`, `"zlib"`, `"lzma"`, `"lzma2"`, `"zstd"`, `"bzip2"`, `"tamp"`) or a compression configuration object. If None, removes compression.
+* `compression` (str or config object, required): Target compression type as string (`"none"`, `"zlib"`, `"lzma"`, `"lzma2"`, `"zstd"`, `"bzip2"`, `"tamp"`) or a compression configuration object. Pass `"none"` to strip compression.
 
 **Returns:** `bytes` - The recompressed diff data
 
@@ -164,7 +164,7 @@ Fine-grained control over Zstandard compression:
 
 ```python
 # Basic configuration
-config = hdiffpatch.ZStdConfig(level=15, window=20, workers=2)
+config = hdiffpatch.ZStdConfig(level=15, window=20, threads=2)
 
 # Preset configurations
 config = hdiffpatch.ZStdConfig.fast()             # Optimized for speed
@@ -180,7 +180,7 @@ diff = hdiffpatch.diff(old_data, new_data, compression=config)
 
 * `level` (1-22): Compression level, higher = better compression
 * `window` (10-27): Window size as log2, larger = better compression
-* `workers` (0-200): Number of threads, 0 = single-threaded
+* `threads` (1-200): Number of threads, 1 = single-threaded
 
 #### ZlibConfig
 
@@ -216,10 +216,10 @@ Fine-grained control over LZMA compression:
 
 ```python
 # LZMA configuration
-config = hdiffpatch.LzmaConfig(level=9, window=23, thread_num=1)
+config = hdiffpatch.LzmaConfig(level=9, window=23, threads=1)
 
 # LZMA2 configuration (supports more threads)
-config = hdiffpatch.Lzma2Config(level=9, window=23, thread_num=4)
+config = hdiffpatch.Lzma2Config(level=9, window=23, threads=4)
 
 # Preset configurations available for both
 config = hdiffpatch.LzmaConfig.fast()
@@ -232,7 +232,7 @@ config = hdiffpatch.LzmaConfig.minimal_memory()
 
 * `level` (0-9): Compression level
 * `window` (12-30): Window size as log2
-* `thread_num`: Number of threads (1-2 for LZMA, 1-64 for LZMA2)
+* `threads`: Number of threads (1-2 for LZMA, 1-64 for LZMA2)
 
 #### BZip2Config
 
@@ -259,8 +259,8 @@ Fine-grained control over [Tamp](https://github.com/BrianPugh/tamp) compression 
 ```python
 config = hdiffpatch.TampConfig(window=10)
 
-# Tamp v2 extended format (better compression; requires a Tamp v2+ decoder)
-config = hdiffpatch.TampConfig(extended=True)
+# Tamp v1.x-compatible output (extended is True by default)
+config = hdiffpatch.TampConfig(extended=False)
 
 # Preset configurations
 config = hdiffpatch.TampConfig.fast()
@@ -272,7 +272,8 @@ config = hdiffpatch.TampConfig.minimal_memory()
 **Parameters:**
 
 * `window` (8-15): Window size as power of 2
-* `extended` (bool, default `False`): Use the Tamp v2 extended format (run-length encoding, longer matches) for better compression. Off by default because the resulting diffs cannot be decompressed by Tamp v1.x decoders.
+* `extended` (bool, default `True`): Use the Tamp v2 extended format (run-length encoding, longer matches) for better compression. Set to `False` if the diff must be decompressed by a Tamp v1.x decoder.
+* `lazy_matching` (bool, default `True`): Spend more CPU during compression searching for better matches. Does not affect the stream format. Set to `False` for faster compression.
 
 ### Exceptions
 
@@ -315,7 +316,7 @@ configs = {
     "zstd_fast": hdiffpatch.ZStdConfig.fast(),
     "zstd_best": hdiffpatch.ZStdConfig.best_compression(),
     "zlib_balanced": hdiffpatch.ZlibConfig.balanced(),
-    "lzma2_custom": hdiffpatch.Lzma2Config(level=6, window=20, thread_num=4),
+    "lzma2_custom": hdiffpatch.Lzma2Config(level=6, window=20, threads=4),
 }
 
 for name, config in configs.items():

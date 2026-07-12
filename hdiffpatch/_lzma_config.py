@@ -21,22 +21,22 @@ class LzmaConfig(BaseConfig):
         Window size as log2. Must be between 12 and 30.
         Larger windows give better compression but use more memory.
         (23 = 8MB window)
-    thread_num : int, default=1
+    threads : int, default=1
         Number of threads (1-2). LZMA supports up to 2 threads.
 
     Examples
     --------
     Fast compression with minimal memory usage (4KB window)
 
-    >>> config = LzmaConfig(level=1, window=12, thread_num=1)
+    >>> config = LzmaConfig(level=1, window=12, threads=1)
 
     Best compression for large files (32MB window)
 
-    >>> config = LzmaConfig(level=9, window=25, thread_num=2)
+    >>> config = LzmaConfig(level=9, window=25, threads=2)
 
     Balanced compression (8MB window)
 
-    >>> config = LzmaConfig(level=6, window=23, thread_num=1)
+    >>> config = LzmaConfig(level=6, window=23, threads=1)
     """
 
     level: int = attrs.field(
@@ -55,7 +55,7 @@ class LzmaConfig(BaseConfig):
             attrs.validators.le(30),
         ),
     )
-    thread_num: int = attrs.field(
+    threads: int = attrs.field(
         default=1,
         validator=attrs.validators.and_(
             attrs.validators.instance_of(int),
@@ -73,7 +73,7 @@ class LzmaConfig(BaseConfig):
         LzmaConfig
             Configuration optimized for speed
         """
-        return cls(level=1, window=12, thread_num=1)
+        return cls(level=1, window=12, threads=1)
 
     @classmethod
     def balanced(cls) -> "LzmaConfig":
@@ -84,7 +84,7 @@ class LzmaConfig(BaseConfig):
         LzmaConfig
             Configuration with balanced speed/compression tradeoff
         """
-        return cls(level=6, window=23, thread_num=1)
+        return cls(level=6, window=23, threads=1)
 
     @classmethod
     def best_compression(cls) -> "LzmaConfig":
@@ -95,7 +95,7 @@ class LzmaConfig(BaseConfig):
         LzmaConfig
             Configuration optimized for best compression
         """
-        return cls(level=9, window=25, thread_num=2)
+        return cls(level=9, window=25, threads=2)
 
     @classmethod
     def minimal_memory(cls) -> "LzmaConfig":
@@ -106,7 +106,7 @@ class LzmaConfig(BaseConfig):
         LzmaConfig
             Configuration with minimal memory usage
         """
-        return cls(level=6, window=12, thread_num=1)
+        return cls(level=6, window=12, threads=1)
 
 
 @attrs.frozen
@@ -125,22 +125,22 @@ class Lzma2Config(BaseConfig):
         Window size as log2. Must be between 12 and 30.
         Larger windows give better compression but use more memory.
         (23 = 8MB window)
-    thread_num : int, default=1
+    threads : int, default=1
         Number of threads (1-64). LZMA2 supports up to 64 threads.
 
     Examples
     --------
     Fast compression with minimal memory usage (4KB window)
 
-    >>> config = Lzma2Config(level=1, window=12, thread_num=1)
+    >>> config = Lzma2Config(level=1, window=12, threads=1)
 
     Best compression for large files with multiple threads (32MB window)
 
-    >>> config = Lzma2Config(level=9, window=25, thread_num=8)
+    >>> config = Lzma2Config(level=9, window=25, threads=8)
 
     Balanced compression with moderate threading (8MB window)
 
-    >>> config = Lzma2Config(level=6, window=23, thread_num=4)
+    >>> config = Lzma2Config(level=6, window=23, threads=4)
     """
 
     level: int = attrs.field(
@@ -159,7 +159,7 @@ class Lzma2Config(BaseConfig):
             attrs.validators.le(30),
         ),
     )
-    thread_num: int = attrs.field(
+    threads: int = attrs.field(
         default=1,
         validator=attrs.validators.and_(
             attrs.validators.instance_of(int),
@@ -177,7 +177,7 @@ class Lzma2Config(BaseConfig):
         Lzma2Config
             Configuration optimized for speed
         """
-        return cls(level=1, window=12, thread_num=1)
+        return cls(level=1, window=12, threads=1)
 
     @classmethod
     def balanced(cls) -> "Lzma2Config":
@@ -188,7 +188,7 @@ class Lzma2Config(BaseConfig):
         Lzma2Config
             Configuration with balanced speed/compression tradeoff
         """
-        return cls(level=6, window=23, thread_num=4)
+        return cls(level=6, window=23, threads=4)
 
     @classmethod
     def best_compression(cls) -> "Lzma2Config":
@@ -199,7 +199,7 @@ class Lzma2Config(BaseConfig):
         Lzma2Config
             Configuration optimized for best compression
         """
-        return cls(level=9, window=25, thread_num=8)
+        return cls(level=9, window=25, threads=8)
 
     @classmethod
     def minimal_memory(cls) -> "Lzma2Config":
@@ -210,4 +210,4 @@ class Lzma2Config(BaseConfig):
         Lzma2Config
             Configuration with minimal memory usage
         """
-        return cls(level=6, window=12, thread_num=1)
+        return cls(level=6, window=12, threads=1)

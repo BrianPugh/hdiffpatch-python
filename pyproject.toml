@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "hdiffpatch"
 dynamic = ["version"]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 urls = {homepage = "https://github.com/BrianPugh/hdiffpatch-python", repository = "https://github.com/BrianPugh/hdiffpatch-python"}
 license = "Apache-2.0"
 description = "Python wrapper around HDiffPatch C++ library for efficient binary diff/patch operations."
@@ -29,7 +29,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -94,7 +93,7 @@ venv = ".venv"
 extraPaths = ["tests/"]
 
 [tool.ruff]
-target-version = 'py39'
+target-version = 'py310'
 
 exclude = [
     "migrations",
@@ -148,8 +147,6 @@ ignore = [
     "E402",
     "E501",
     "TRY003", # Avoid specifying messages outside exception class; overly strict, especially for ValueError
-    "UP007",  # Use `X | Y` for type annotations instead of `typing.Union[X, Y]` - not available in Python 3.9
-    "UP045",  # Use `X | None` instead of `Optional[X]` - not available in Python 3.9
 ]
 
 [tool.ruff.lint.flake8-bugbear]
@@ -198,6 +195,8 @@ dev = [
     "pytest>=8.4.1",
     "pytest-cov>=3.0.0",
     "pytest-mock>=3.7.0",
+    "setuptools>=61.0",
+    "setuptools-scm>=8.0",
 ]
 debug = [
     "ipdb>=0.13.9",

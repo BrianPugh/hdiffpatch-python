@@ -16,14 +16,14 @@ class TestLzmaConfigClass:
         config = LzmaConfig()
         assert config.level == 9
         assert config.window == 23  # 8MB (2^23)
-        assert config.thread_num == 1
+        assert config.threads == 1
 
     def test_custom_construction(self):
         """Test LzmaConfig construction with custom parameters."""
-        config = LzmaConfig(level=6, window=12, thread_num=2)
+        config = LzmaConfig(level=6, window=12, threads=2)
         assert config.level == 6
         assert config.window == 12
-        assert config.thread_num == 2
+        assert config.threads == 2
 
 
 class TestLzma2ConfigClass:
@@ -34,14 +34,14 @@ class TestLzma2ConfigClass:
         config = Lzma2Config()
         assert config.level == 9
         assert config.window == 23  # 8MB (2^23)
-        assert config.thread_num == 1
+        assert config.threads == 1
 
     def test_custom_construction(self):
         """Test Lzma2Config construction with custom parameters."""
-        config = Lzma2Config(level=6, window=12, thread_num=8)
+        config = Lzma2Config(level=6, window=12, threads=8)
         assert config.level == 6
         assert config.window == 12
-        assert config.thread_num == 8
+        assert config.threads == 8
 
 
 class TestLzmaConfigValidation:
@@ -88,43 +88,43 @@ class TestLzmaConfigValidation:
         with pytest.raises(TypeError, match="'window' must be <class 'int'>"):
             LzmaConfig(window="23")  # type: ignore[arg-type]
 
-    @pytest.mark.parametrize("thread_num", [1, 2])
-    def test_lzma_thread_num_valid_values(self, thread_num):
-        """Test thread_num accepts valid values for LZMA."""
-        config = LzmaConfig(thread_num=thread_num)
-        assert config.thread_num == thread_num
+    @pytest.mark.parametrize("threads", [1, 2])
+    def test_lzma_threads_valid_values(self, threads):
+        """Test threads accepts valid values for LZMA."""
+        config = LzmaConfig(threads=threads)
+        assert config.threads == threads
 
-    @pytest.mark.parametrize("thread_num", [0, 3, 8])
-    def test_lzma_thread_num_invalid_range(self, thread_num):
-        """Test thread_num rejects out-of-range values for LZMA."""
-        with pytest.raises(ValueError, match="'thread_num' must be"):
-            LzmaConfig(thread_num=thread_num)
+    @pytest.mark.parametrize("threads", [0, 3, 8])
+    def test_lzma_threads_invalid_range(self, threads):
+        """Test threads rejects out-of-range values for LZMA."""
+        with pytest.raises(ValueError, match="'threads' must be"):
+            LzmaConfig(threads=threads)
 
-    def test_lzma_thread_num_invalid_type(self):
-        """Test thread_num rejects invalid types for LZMA."""
-        with pytest.raises(TypeError, match="'thread_num' must be <class 'int'>"):
-            LzmaConfig(thread_num="2")  # type: ignore[arg-type]
+    def test_lzma_threads_invalid_type(self):
+        """Test threads rejects invalid types for LZMA."""
+        with pytest.raises(TypeError, match="'threads' must be <class 'int'>"):
+            LzmaConfig(threads="2")  # type: ignore[arg-type]
 
 
 class TestLzma2ConfigValidation:
     """Test Lzma2Config parameter validation."""
 
-    @pytest.mark.parametrize("thread_num", [1, 2, 4, 8, 16, 32, 64])
-    def test_lzma2_thread_num_valid_values(self, thread_num):
-        """Test thread_num accepts valid values for LZMA2."""
-        config = Lzma2Config(thread_num=thread_num)
-        assert config.thread_num == thread_num
+    @pytest.mark.parametrize("threads", [1, 2, 4, 8, 16, 32, 64])
+    def test_lzma2_threads_valid_values(self, threads):
+        """Test threads accepts valid values for LZMA2."""
+        config = Lzma2Config(threads=threads)
+        assert config.threads == threads
 
-    @pytest.mark.parametrize("thread_num", [0, 65])
-    def test_lzma2_thread_num_invalid_range(self, thread_num):
-        """Test thread_num rejects out-of-range values for LZMA2."""
-        with pytest.raises(ValueError, match="'thread_num' must be"):
-            Lzma2Config(thread_num=thread_num)
+    @pytest.mark.parametrize("threads", [0, 65])
+    def test_lzma2_threads_invalid_range(self, threads):
+        """Test threads rejects out-of-range values for LZMA2."""
+        with pytest.raises(ValueError, match="'threads' must be"):
+            Lzma2Config(threads=threads)
 
-    def test_lzma2_thread_num_invalid_type(self):
-        """Test thread_num rejects invalid types for LZMA2."""
-        with pytest.raises(TypeError, match="'thread_num' must be <class 'int'>"):
-            Lzma2Config(thread_num="8")  # type: ignore[arg-type]
+    def test_lzma2_threads_invalid_type(self):
+        """Test threads rejects invalid types for LZMA2."""
+        with pytest.raises(TypeError, match="'threads' must be <class 'int'>"):
+            Lzma2Config(threads="8")  # type: ignore[arg-type]
 
 
 class TestLzmaConfigClassmethods:
@@ -138,7 +138,7 @@ class TestLzmaConfigClassmethods:
                 {
                     "level": 1,
                     "window": 12,
-                    "thread_num": 1,
+                    "threads": 1,
                 },
             ),
             (
@@ -146,7 +146,7 @@ class TestLzmaConfigClassmethods:
                 {
                     "level": 6,
                     "window": 23,
-                    "thread_num": 1,
+                    "threads": 1,
                 },
             ),
             (
@@ -154,7 +154,7 @@ class TestLzmaConfigClassmethods:
                 {
                     "level": 9,
                     "window": 25,
-                    "thread_num": 2,
+                    "threads": 2,
                 },
             ),
             (
@@ -162,7 +162,7 @@ class TestLzmaConfigClassmethods:
                 {
                     "level": 6,
                     "window": 12,
-                    "thread_num": 1,
+                    "threads": 1,
                 },
             ),
         ],
@@ -185,7 +185,7 @@ class TestLzma2ConfigClassmethods:
                 {
                     "level": 1,
                     "window": 12,
-                    "thread_num": 1,
+                    "threads": 1,
                 },
             ),
             (
@@ -193,7 +193,7 @@ class TestLzma2ConfigClassmethods:
                 {
                     "level": 6,
                     "window": 23,
-                    "thread_num": 4,
+                    "threads": 4,
                 },
             ),
             (
@@ -201,7 +201,7 @@ class TestLzma2ConfigClassmethods:
                 {
                     "level": 9,
                     "window": 25,
-                    "thread_num": 8,
+                    "threads": 8,
                 },
             ),
             (
@@ -209,7 +209,7 @@ class TestLzma2ConfigClassmethods:
                 {
                     "level": 6,
                     "window": 12,
-                    "thread_num": 1,
+                    "threads": 1,
                 },
             ),
         ],
@@ -249,9 +249,9 @@ class TestLzma2ConfigMethods:
 
     def test_hashability(self):
         """Test that Lzma2Config objects are hashable."""
-        config1 = Lzma2Config(level=6, window=12, thread_num=8)
-        config2 = Lzma2Config(level=6, window=12, thread_num=8)
-        config3 = Lzma2Config(level=9, window=12, thread_num=8)
+        config1 = Lzma2Config(level=6, window=12, threads=8)
+        config2 = Lzma2Config(level=6, window=12, threads=8)
+        config3 = Lzma2Config(level=9, window=12, threads=8)
 
         # Test that equal objects have same hash
         assert hash(config1) == hash(config2)
@@ -351,10 +351,10 @@ class TestLzmaConfigIntegration:
         result = hdiffpatch.apply(binary_data["old"], diff_data)
         assert result == binary_data["new"]
 
-    @pytest.mark.parametrize("thread_num", [1, 2])
-    def test_diff_thread_numbers(self, large_repetitive_data, thread_num):
+    @pytest.mark.parametrize("threads", [1, 2])
+    def test_diff_threadsbers(self, large_repetitive_data, threads):
         """Test diff() with different thread numbers."""
-        config = LzmaConfig(thread_num=thread_num)
+        config = LzmaConfig(threads=threads)
 
         # Test that diff accepts different thread numbers
         diff_data = hdiffpatch.diff(large_repetitive_data["old"], large_repetitive_data["new"], compression=config)
@@ -419,10 +419,10 @@ class TestLzma2ConfigIntegration:
         result = hdiffpatch.apply(simple_text_data["old"], diff_data)
         assert result == simple_text_data["new"]
 
-    @pytest.mark.parametrize("thread_num", [1, 4, 8])
-    def test_diff_thread_numbers(self, large_repetitive_data, thread_num):
+    @pytest.mark.parametrize("threads", [1, 4, 8])
+    def test_diff_threadsbers(self, large_repetitive_data, threads):
         """Test diff() with different thread numbers."""
-        config = Lzma2Config(thread_num=thread_num)
+        config = Lzma2Config(threads=threads)
 
         # Test that diff accepts different thread numbers
         diff_data = hdiffpatch.diff(large_repetitive_data["old"], large_repetitive_data["new"], compression=config)
@@ -454,7 +454,7 @@ class TestLzmaConfigRoundTrip:
 
     def test_round_trip_with_lzma2_config(self, unicode_data):
         """Test complete round-trip with Lzma2Config."""
-        config = Lzma2Config(level=6, window=12, thread_num=4)
+        config = Lzma2Config(level=6, window=12, threads=4)
 
         # Test complete round-trip with Lzma2Config
         diff_data = hdiffpatch.diff(unicode_data["old"], unicode_data["new"], compression=config)
@@ -647,15 +647,15 @@ class TestLzmaConfigDifferentiation:
         # NOTE: For some data patterns, different dict sizes may produce similar results
         assert len(set(diff_sizes)) >= 1, f"Expected valid diff sizes for dict sizes, got: {diff_sizes}"
 
-    def test_thread_numbers_maintain_functionality(self):
+    def test_threadsbers_maintain_functionality(self):
         """Test that different thread numbers work correctly."""
         # Create data that might show threading differences
         old_data = b"ABCD" * 1000  # Repetitive pattern
         new_data = b"EFGH" * 1000  # Different pattern, same structure
 
         # Test LZMA with different thread numbers
-        for thread_num in [1, 2]:
-            config = LzmaConfig(level=9, thread_num=thread_num)
+        for threads in [1, 2]:
+            config = LzmaConfig(level=9, threads=threads)
             diff_data = hdiffpatch.diff(old_data, new_data, compression=config)
 
             # Ensure round-trip works
@@ -666,8 +666,8 @@ class TestLzmaConfigDifferentiation:
             assert len(diff_data) > 0
 
         # Test LZMA2 with different thread numbers
-        for thread_num in [1, 4, 8]:
-            config = Lzma2Config(level=9, thread_num=thread_num)
+        for threads in [1, 4, 8]:
+            config = Lzma2Config(level=9, threads=threads)
             diff_data = hdiffpatch.diff(old_data, new_data, compression=config)
 
             # Ensure round-trip works
@@ -683,8 +683,8 @@ class TestLzmaConfigDifferentiation:
         new_data = large_repetitive_data["new"]
 
         # Same configuration for both
-        lzma_config = LzmaConfig(level=9, window=13, thread_num=1)
-        lzma2_config = Lzma2Config(level=9, window=13, thread_num=1)
+        lzma_config = LzmaConfig(level=9, window=13, threads=1)
+        lzma2_config = Lzma2Config(level=9, window=13, threads=1)
 
         lzma_diff = hdiffpatch.diff(old_data, new_data, compression=lzma_config)
         lzma2_diff = hdiffpatch.diff(old_data, new_data, compression=lzma2_config)
@@ -716,7 +716,7 @@ class TestLzmaConfigDifferentiation:
         configs_to_test = [
             LzmaConfig.fast(),  # Level 1 vs default level 9
             LzmaConfig(level=9, window=12),  # Smaller dictionary
-            LzmaConfig(level=9, thread_num=2),  # Multiple threads
+            LzmaConfig(level=9, threads=2),  # Multiple threads
         ]
 
         default_size = len(default_diff)

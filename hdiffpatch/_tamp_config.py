@@ -17,11 +17,14 @@ class TampConfig(BaseConfig):
     window : int, default=10
         Window size as power of 2 (8-15). Larger windows give
         better compression but use more memory. (1KB window)
-    extended : bool, default=False
+    extended : bool, default=True
         Use the Tamp v2 extended format (run-length encoding and longer
-        matches) for better compression. Diffs produced with this enabled
-        cannot be applied by Tamp v1.x decompressors, so it is disabled
-        by default for backwards compatibility.
+        matches) for better compression. Set to False to produce diffs
+        that can be applied by Tamp v1.x decompressors.
+    lazy_matching : bool, default=True
+        Spend more CPU during compression searching for better matches.
+        Does not affect the stream format; any tamp decompressor can
+        read the output. Set to False for faster compression.
 
     Examples
     --------
@@ -33,9 +36,9 @@ class TampConfig(BaseConfig):
 
     >>> config = TampConfig(window=12)
 
-    Extended format for better compression
+    Tamp v1.x-compatible output
 
-    >>> config = TampConfig(extended=True)
+    >>> config = TampConfig(extended=False)
     """
 
     window: int = attrs.field(
@@ -47,7 +50,11 @@ class TampConfig(BaseConfig):
         ),
     )
     extended: bool = attrs.field(
-        default=False,
+        default=True,
+        validator=attrs.validators.instance_of(bool),
+    )
+    lazy_matching: bool = attrs.field(
+        default=True,
         validator=attrs.validators.instance_of(bool),
     )
 
@@ -60,7 +67,7 @@ class TampConfig(BaseConfig):
         TampConfig
             Configuration optimized for speed
         """
-        return cls(window=8)
+        return cls(window=8, lazy_matching=False)
 
     @classmethod
     def balanced(cls) -> "TampConfig":

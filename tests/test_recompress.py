@@ -231,10 +231,10 @@ class TestRecompressEdgeCases:
     def test_recompress_invalid_input_type(self):
         """Test recompress with invalid input types."""
         with pytest.raises(TypeError, match="Argument 'diff_data' has incorrect type"):
-            hdiffpatch.recompress("not bytes")  # pyright: ignore[reportArgumentType]
+            hdiffpatch.recompress("not bytes", compression="none")  # pyright: ignore[reportArgumentType]
 
         with pytest.raises(TypeError, match="Argument 'diff_data' has incorrect type"):
-            hdiffpatch.recompress(123)  # pyright: ignore[reportArgumentType]
+            hdiffpatch.recompress(123, compression="none")  # pyright: ignore[reportArgumentType]
 
     def test_recompress_invalid_compression_type(self, simple_text_data):
         """Test recompress with invalid compression types."""

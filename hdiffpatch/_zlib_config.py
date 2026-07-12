@@ -1,7 +1,6 @@
 """ZlibConfig class for configuring zlib compression parameters."""
 
 from enum import Enum
-from typing import Union
 
 import attrs
 
@@ -18,7 +17,7 @@ class ZlibStrategy(Enum):
     FIXED = "fixed"
 
 
-def _convert_strategy(value: Union[ZlibStrategy, str]) -> ZlibStrategy:
+def _convert_strategy(value: ZlibStrategy | str) -> ZlibStrategy:
     """Convert and validate strategy parameter.
 
     Parameters

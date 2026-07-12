@@ -14,14 +14,14 @@ class TestZStdConfigClass:
         config = ZStdConfig()
         assert config.level == 3
         assert config.window is None
-        assert config.workers == 0
+        assert config.threads == 1
 
     def test_custom_construction(self):
         """Test ZStdConfig construction with custom parameters."""
-        config = ZStdConfig(level=10, window=20, workers=4)
+        config = ZStdConfig(level=10, window=20, threads=4)
         assert config.level == 10
         assert config.window == 20
-        assert config.workers == 4
+        assert config.threads == 4
 
 
 class TestZStdConfigValidation:
@@ -67,22 +67,22 @@ class TestZStdConfigValidation:
         config = ZStdConfig(window=None)
         assert config.window is None
 
-    @pytest.mark.parametrize("workers", [0, 1, 50, 200])
-    def test_workers_valid_values(self, workers):
-        """Test workers accepts valid values."""
-        config = ZStdConfig(workers=workers)
-        assert config.workers == workers
+    @pytest.mark.parametrize("threads", [1, 2, 50, 200])
+    def test_threads_valid_values(self, threads):
+        """Test threads accepts valid values."""
+        config = ZStdConfig(threads=threads)
+        assert config.threads == threads
 
-    @pytest.mark.parametrize("workers", [-1, 201])
-    def test_workers_invalid_range(self, workers):
-        """Test workers rejects out-of-range values."""
-        with pytest.raises(ValueError, match="'workers' must be"):
-            ZStdConfig(workers=workers)
+    @pytest.mark.parametrize("threads", [0, 201])
+    def test_threads_invalid_range(self, threads):
+        """Test threads rejects out-of-range values."""
+        with pytest.raises(ValueError, match="'threads' must be"):
+            ZStdConfig(threads=threads)
 
-    def test_workers_invalid_type(self):
-        """Test workers rejects invalid types."""
-        with pytest.raises(TypeError, match="'workers' must be <class 'int'>"):
-            ZStdConfig(workers="4")  # type: ignore[arg-type]
+    def test_threads_invalid_type(self):
+        """Test threads rejects invalid types."""
+        with pytest.raises(TypeError, match="'threads' must be <class 'int'>"):
+            ZStdConfig(threads="4")  # type: ignore[arg-type]
 
 
 class TestZStdConfigClassmethods:
@@ -96,7 +96,7 @@ class TestZStdConfigClassmethods:
                 {
                     "level": 1,
                     "window": None,
-                    "workers": 0,
+                    "threads": 1,
                 },
             ),
             (
@@ -104,7 +104,7 @@ class TestZStdConfigClassmethods:
                 {
                     "level": 6,
                     "window": None,
-                    "workers": 2,
+                    "threads": 2,
                 },
             ),
             (
@@ -112,7 +112,7 @@ class TestZStdConfigClassmethods:
                 {
                     "level": 22,
                     "window": 27,
-                    "workers": 4,
+                    "threads": 4,
                 },
             ),
             (
@@ -120,7 +120,7 @@ class TestZStdConfigClassmethods:
                 {
                     "level": 3,
                     "window": 10,
-                    "workers": 0,
+                    "threads": 1,
                 },
             ),
         ],
@@ -137,9 +137,9 @@ class TestZStdConfigMethods:
 
     def test_hashability(self):
         """Test that ZStdConfig objects are hashable."""
-        config1 = ZStdConfig(level=6, window=15, workers=2)
-        config2 = ZStdConfig(level=6, window=15, workers=2)
-        config3 = ZStdConfig(level=9, window=15, workers=2)
+        config1 = ZStdConfig(level=6, window=15, threads=2)
+        config2 = ZStdConfig(level=6, window=15, threads=2)
+        config3 = ZStdConfig(level=9, window=15, threads=2)
 
         # Test that equal objects have same hash
         assert hash(config1) == hash(config2)
@@ -239,10 +239,10 @@ class TestZStdConfigIntegration:
         result = hdiffpatch.apply(binary_data["old"], diff_data)
         assert result == binary_data["new"]
 
-    @pytest.mark.parametrize("workers", [0, 1, 4])
-    def test_diff_workers(self, large_repetitive_data, workers):
+    @pytest.mark.parametrize("threads", [1, 2, 4])
+    def test_diff_threads(self, large_repetitive_data, threads):
         """Test diff() with different worker counts."""
-        config = ZStdConfig(workers=workers)
+        config = ZStdConfig(threads=threads)
 
         # Test that diff accepts different worker counts
         diff_data = hdiffpatch.diff(large_repetitive_data["old"], large_repetitive_data["new"], compression=config)
@@ -260,7 +260,7 @@ class TestZStdConfigRoundTrip:
 
     def test_round_trip_with_config(self, simple_text_data):
         """Test complete round-trip with ZStdConfig."""
-        config = ZStdConfig(level=6, window=15, workers=2)
+        config = ZStdConfig(level=6, window=15, threads=2)
 
         # Test complete round-trip with ZStdConfig
         diff_data = hdiffpatch.diff(simple_text_data["old"], simple_text_data["new"], compression=config)
