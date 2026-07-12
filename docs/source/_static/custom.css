@@ -1,0 +1,23 @@
+/* The nav header background is white; the theme's default white link/version
+   text (meant for its dark-blue header) is invisible on it. */
+.wy-side-nav-search > a {
+    color: #404040;
+}
+
+.wy-side-nav-search > div.version {
+    color: #808080;
+}
+
+/* Have contents take up entire browser window width. */
+.wy-nav-content {
+    max-width: none !important
+}
+
+/* override table width restrictions */
+.wy-table-responsive table td, .wy-table-responsive table th {
+    white-space: normal !important;
+}
+
+.wy-table-responsive {
+    overflow: visible !important;
+}

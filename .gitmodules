@@ -1,6 +1,6 @@
 [submodule "hdiffpatch/_c_src/HDiffPatch"]
 	path = hdiffpatch/_c_src/HDiffPatch
-	url = git@github.com:sisong/HDiffPatch.git
+	url = https://github.com/sisong/HDiffPatch.git
 [submodule "hdiffpatch/_c_src/libmd5"]
 	path = hdiffpatch/_c_src/libmd5
 	url = https://github.com/sisong/libmd5.git
