@@ -19,6 +19,7 @@ typedef struct {
     int             window;         // 8..15
     int             literal;        // 5..8 (fixed at 8)
     int             use_custom_dictionary;  // 0 or 1
+    int             extended;       // 0 or 1; Tamp v2 extended format (RLE, long matches)
 } TCompressPlugin_tamp;
 
 // Tamp compression function
@@ -34,11 +35,12 @@ static hpatch_StreamPos_t _tamp_compress(const hdiff_TCompress* compressPlugin,
 
     // Get configuration from custom plugin or use defaults
     const TCompressPlugin_tamp* tamp_plugin = (const TCompressPlugin_tamp*)compressPlugin;
-    TampConf conf = {
-        static_cast<uint16_t>(tamp_plugin->window),
-        static_cast<uint16_t>(tamp_plugin->literal),
-        static_cast<uint16_t>(tamp_plugin->use_custom_dictionary)
-    };
+    TampConf conf;
+    memset(&conf, 0, sizeof(conf));  // extended=0 keeps output v1-compatible unless requested
+    conf.window = static_cast<uint16_t>(tamp_plugin->window);
+    conf.literal = static_cast<uint16_t>(tamp_plugin->literal);
+    conf.use_custom_dictionary = static_cast<uint16_t>(tamp_plugin->use_custom_dictionary);
+    conf.extended = static_cast<uint16_t>(tamp_plugin->extended);
 
     // Validate that custom dictionary is not used (not yet supported)
     if (conf.use_custom_dictionary) {
@@ -121,7 +123,8 @@ static const TCompressPlugin_tamp tampCompressPlugin = {
     {_tamp_compressType, _default_maxCompressedSize, _default_setParallelThreadNumber, _tamp_compress},
     10,  // window
     8,   // literal
-    0    // use_custom_dictionary
+    0,   // use_custom_dictionary
+    0    // extended
 };
 
 //=============================================================================
@@ -158,22 +161,23 @@ static hpatch_decompressHandle _tamp_decompress_open(hpatch_TDecompress* decompr
     _tamp_TDecompress* self = 0;
     TampConf conf;
     tamp_res res;
-    unsigned char header_buf[1];
+    unsigned char header_buf[2];
+    size_t header_avail = 0;
     size_t header_consumed = 0;
 
-    // Verify we have at least the header byte
+    // Verify we have at least the first header byte; read up to 2 (v2 streams
+    // with the more_header bit set have a second header byte)
     if (code_end - code_begin < 1) {
         return NULL;
     }
-
-    // Read the 1-byte header to determine window size
-    if (!codeStream->read(codeStream, code_begin, header_buf, header_buf + 1)) {
+    header_avail = (code_end - code_begin >= 2) ? 2 : 1;
+    if (!codeStream->read(codeStream, code_begin, header_buf, header_buf + header_avail)) {
         return NULL;
     }
 
     // Parse header to get configuration
-    res = tamp_decompressor_read_header(&conf, header_buf, 1, &header_consumed);
-    if (res != TAMP_OK || header_consumed != 1) {
+    res = tamp_decompressor_read_header(&conf, header_buf, header_avail, &header_consumed);
+    if (res != TAMP_OK || header_consumed < 1 || header_consumed > header_avail) {
         return NULL;
     }
 
@@ -201,12 +205,12 @@ static hpatch_decompressHandle _tamp_decompress_open(hpatch_TDecompress* decompr
     self->input_buf_pos = 0;
     self->input_buf_avail = 0;
     self->codeStream = codeStream;
-    self->code_begin = code_begin + sizeof(header_buf); // Skip the header byte we already read
+    self->code_begin = code_begin + header_consumed; // Skip the header bytes we already read
     self->code_end = code_end;
     self->decError = hpatch_dec_ok;
 
     // Initialize Tamp decompressor with the parsed configuration
-    res = tamp_decompressor_init(&self->decompressor, &conf, self->window_buf);
+    res = tamp_decompressor_init(&self->decompressor, &conf, self->window_buf, (uint8_t)conf.window);
     if (res != TAMP_OK) {
         self->decError = hpatch_dec_error;
         return self;

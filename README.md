@@ -259,6 +259,9 @@ Fine-grained control over [Tamp](https://github.com/BrianPugh/tamp) compression 
 ```python
 config = hdiffpatch.TampConfig(window=10)
 
+# Tamp v2 extended format (better compression; requires a Tamp v2+ decoder)
+config = hdiffpatch.TampConfig(extended=True)
+
 # Preset configurations
 config = hdiffpatch.TampConfig.fast()
 config = hdiffpatch.TampConfig.balanced()
@@ -269,6 +272,7 @@ config = hdiffpatch.TampConfig.minimal_memory()
 **Parameters:**
 
 * `window` (8-15): Window size as power of 2
+* `extended` (bool, default `False`): Use the Tamp v2 extended format (run-length encoding, longer matches) for better compression. Off by default because the resulting diffs cannot be decompressed by Tamp v1.x decoders.
 
 ### Exceptions
 
