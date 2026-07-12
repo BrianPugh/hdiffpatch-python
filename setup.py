@@ -32,6 +32,10 @@ class CustomBuildExt(build_ext):
     """Custom build_ext to handle C++ standard flags for mixed C/C++ extensions."""
 
     def build_extension(self, ext):
+        # distutils' UnixCCompiler doesn't know .S (preprocessed assembly) by default
+        if ".S" not in self.compiler.src_extensions:
+            self.compiler.src_extensions.append(".S")
+
         # Override the _compile method to add C++ standard only for C++ files
         original_compile = self.compiler._compile
 
@@ -124,6 +128,10 @@ def get_sources():
     sources.extend((zstd_path / "common").glob("*.c"))
     sources.extend((zstd_path / "decompress").glob("*.c"))
     sources.extend((zstd_path / "compress").glob("*.c"))
+    # zstd's x86-64 BMI2 assembly decode path (runtime-dispatched, baseline-safe).
+    # MSVC cannot assemble it; on other architectures it preprocesses to nothing.
+    if platform.system() != "Windows" and platform.machine().lower() in ["x86_64", "amd64"]:
+        sources.append(zstd_path / "decompress" / "huf_decompress_amd64.S")
 
     # BZ2
     bz2_sources = ["blocksort.c", "bzlib.c", "compress.c", "crctable.c", "decompress.c", "huffman.c", "randtable.c"]
@@ -192,7 +200,6 @@ def get_compile_args():
         "-D_CompressPlugin_zstd",
         "-DZSTD_HAVE_WEAK_SYMBOLS=0",
         "-DZSTD_TRACE=0",
-        "-DZSTD_DISABLE_ASM=1",
         "-DZSTDLIB_VISIBLE=",
         "-DZSTDLIB_HIDDEN=",
         "-D_CompressPlugin_bz2",
@@ -207,6 +214,7 @@ def get_compile_args():
     if platform.system() == "Windows":
         extra_compile_args.extend(
             [
+                "-DZSTD_DISABLE_ASM=1",  # MSVC cannot assemble zstd's GAS-syntax .S file
                 "/O2",  # Maximum optimization for Windows
                 "/std:c++17",  # Use C++17 standard
                 "/D_CRT_SECURE_NO_WARNINGS",
@@ -236,6 +244,7 @@ def get_compile_args():
         # Add performance optimizations if enabled
         if enable_aggressive_opts:
             extra_compile_args.append("-funroll-loops")  # Unroll loops for better performance
+            extra_compile_args.append("-flto")  # Link-time optimization (matches /GL+/LTCG on Windows)
 
             # ISA extensions beyond the x86-64 baseline would SIGILL on older
             # CPUs, so only use them for local (non-redistributed) builds.
@@ -259,7 +268,9 @@ def get_link_args():
         if enable_aggressive_opts:
             extra_link_args.extend(["/LTCG"])  # Link-time code generation
     else:
-        extra_link_args.extend(["-O3"])  # Basic optimization without LTO
+        extra_link_args.extend(["-O3"])
+        if enable_aggressive_opts:
+            extra_link_args.append("-flto")  # Must match the compile-time flag
 
     return extra_link_args
 
