@@ -17,6 +17,11 @@ class TampConfig(BaseConfig):
     window : int, default=10
         Window size as power of 2 (8-15). Larger windows give
         better compression but use more memory. (1KB window)
+    extended : bool, default=False
+        Use the Tamp v2 extended format (run-length encoding and longer
+        matches) for better compression. Diffs produced with this enabled
+        cannot be applied by Tamp v1.x decompressors, so it is disabled
+        by default for backwards compatibility.
 
     Examples
     --------
@@ -27,6 +32,10 @@ class TampConfig(BaseConfig):
     Custom window size
 
     >>> config = TampConfig(window=12)
+
+    Extended format for better compression
+
+    >>> config = TampConfig(extended=True)
     """
 
     window: int = attrs.field(
@@ -36,6 +45,10 @@ class TampConfig(BaseConfig):
             attrs.validators.ge(8),
             attrs.validators.le(15),
         ),
+    )
+    extended: bool = attrs.field(
+        default=False,
+        validator=attrs.validators.instance_of(bool),
     )
 
     @classmethod

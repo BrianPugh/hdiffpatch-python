@@ -13,11 +13,13 @@ class TestTampConfigClass:
         """Test default TampConfig construction."""
         config = TampConfig()
         assert config.window == 10
+        assert config.extended is False
 
     def test_custom_construction(self):
         """Test TampConfig construction with custom parameters."""
-        config = TampConfig(window=12)
+        config = TampConfig(window=12, extended=True)
         assert config.window == 12
+        assert config.extended is True
 
 
 class TestTampConfigValidation:
@@ -40,6 +42,12 @@ class TestTampConfigValidation:
         """Test window rejects invalid types."""
         with pytest.raises(TypeError, match="'window' must be <class 'int'>"):
             TampConfig(window=window)  # type: ignore[arg-type]
+
+    @pytest.mark.parametrize("extended", ["yes", 1, None])
+    def test_extended_invalid_type(self, extended):
+        """Test extended rejects invalid types."""
+        with pytest.raises(TypeError, match="'extended' must be <class 'bool'>"):
+            TampConfig(extended=extended)  # type: ignore[arg-type]
 
 
 class TestTampConfigClassmethods:
@@ -203,6 +211,33 @@ class TestTampConfigRoundTrip:
         # Test round-trip
         result = hdiffpatch.apply(unicode_data["old"], diff_data)
         assert result == unicode_data["new"]
+
+    @pytest.mark.parametrize("window", [8, 10, 12, 15])
+    def test_round_trip_extended_all_windows(self, unicode_data, window):
+        """Test round-trip with the extended format across window sizes."""
+        config = TampConfig(window=window, extended=True)
+
+        diff_data = hdiffpatch.diff(unicode_data["old"], unicode_data["new"], compression=config)
+
+        assert isinstance(diff_data, bytes)
+        assert len(diff_data) > 0
+
+        result = hdiffpatch.apply(unicode_data["old"], diff_data)
+        assert result == unicode_data["new"]
+
+    def test_extended_differs_from_default(self, large_repetitive_data):
+        """Test that the extended format produces a different (v2) stream than the default."""
+        diff_default = hdiffpatch.diff(
+            large_repetitive_data["old"], large_repetitive_data["new"], compression=TampConfig()
+        )
+        diff_extended = hdiffpatch.diff(
+            large_repetitive_data["old"], large_repetitive_data["new"], compression=TampConfig(extended=True)
+        )
+
+        assert diff_default != diff_extended
+
+        result = hdiffpatch.apply(large_repetitive_data["old"], diff_extended)
+        assert result == large_repetitive_data["new"]
 
     @pytest.mark.parametrize(
         "config_method",
