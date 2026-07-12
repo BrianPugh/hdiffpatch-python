@@ -5,6 +5,11 @@
 # Required
 version: 2
 
+# The C extension statically embeds the vendored C/C++ submodules.
+submodules:
+  include: all
+  recursive: true
+
 build:
   os: "ubuntu-24.04"
   tools:
