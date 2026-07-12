@@ -18,7 +18,7 @@ git_commit = git_repo.head.commit
 
 # -- Project information -----------------------------------------------------
 
-project = "hdiffpatch"
+project = "HDiffPatch"
 copyright = f"{date.today().year}, Brian Pugh"
 author = "Brian Pugh"
 
@@ -145,7 +145,7 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 
 html_title = project
-html_logo = "../../assets/logo_200w.png"
+html_logo = None
 html_favicon = None
 
 html_theme_options = {

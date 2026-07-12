@@ -1,4 +1,4 @@
-hdiffpatch
+HDiffPatch
 ==========
 
 .. include:: ../../README.md
@@ -8,7 +8,6 @@ hdiffpatch
    :maxdepth: 2
    :caption: Contents:
 
-   self
    Installation
    Performance
    api
