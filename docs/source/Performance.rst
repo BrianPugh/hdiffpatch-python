@@ -16,7 +16,12 @@ Performance
 Benchmarks
 ----------
 
-Diffing two consecutive MicroPython RPI_PICO firmware releases (~650 KB each, best of 5 runs, Apple M3). Absolute times vary by machine and input; the ratios are the point.
+Diffing two consecutive MicroPython RPI_PICO firmware releases (~650 KB each, best of 5 runs, Apple M3). Each compression type uses its default settings. Absolute times vary by machine and input; the ratios are the point. Regenerate with ``uv run python tools/benchmark.py``.
+
+* **diff** — create the compressed diff from scratch: :func:`hdiffpatch.diff` with ``validate=False``.
+* **apply** — apply that diff to the old file with :func:`hdiffpatch.apply`.
+* **recompress** — re-encode a precomputed uncompressed diff into this compression with :func:`hdiffpatch.recompress`; compare against the *diff* column to see what skipping the diff computation saves.
+* **diff size / % of new file** — the compressed diff in bytes, and relative to the new file's size (lower is better).
 
 ===========  =========  ==========  ===============  =========  =============
 compression  diff (ms)  apply (ms)  recompress (ms)  diff size  % of new file
@@ -29,4 +34,4 @@ bzip2             34.2         4.0              8.6    102,686          15.4%
 tamp              40.5         1.1             15.1    110,711          16.6%
 ===========  =========  ==========  ===============  =========  =============
 
-``validate=True`` measured 26.0 ms against 25.5 ms with ``validate=False`` (uncompressed diff) — roughly 2% overhead.
+``validate=True`` measured 26.0 ms against 25.5 ms with ``validate=False`` (uncompressed diff) — a few percent of overhead.
