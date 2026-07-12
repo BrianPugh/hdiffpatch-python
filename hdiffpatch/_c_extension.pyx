@@ -360,7 +360,7 @@ cdef TCompressPlugin_lzma* create_custom_lzma_plugin(lzma_config) except NULL:
     # Set custom parameters
     custom_plugin.compress_level = lzma_config.level
     custom_plugin.dict_size = <unsigned int>(1 << lzma_config.window)
-    custom_plugin.thread_num = lzma_config.thread_num
+    custom_plugin.thread_num = lzma_config.threads
 
     return custom_plugin
 
@@ -428,7 +428,7 @@ cdef TCompressPlugin_lzma2* create_custom_lzma2_plugin(lzma2_config) except NULL
     # Set custom parameters
     custom_plugin.compress_level = lzma2_config.level
     custom_plugin.dict_size = <unsigned int>(1 << lzma2_config.window)
-    custom_plugin.thread_num = lzma2_config.thread_num
+    custom_plugin.thread_num = lzma2_config.threads
 
     return custom_plugin
 
@@ -491,7 +491,7 @@ cdef TCompressPlugin_zstd* create_custom_zstd_plugin(zstd_config) except NULL:
 
     # Set custom parameters
     custom_plugin.compress_level = zstd_config.level
-    custom_plugin.thread_num = zstd_config.workers
+    custom_plugin.thread_num = zstd_config.threads
 
     # Convert window to dict_bits if specified, otherwise use default
     if zstd_config.window is not None:

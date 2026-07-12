@@ -164,7 +164,7 @@ Fine-grained control over Zstandard compression:
 
 ```python
 # Basic configuration
-config = hdiffpatch.ZStdConfig(level=15, window=20, workers=2)
+config = hdiffpatch.ZStdConfig(level=15, window=20, threads=2)
 
 # Preset configurations
 config = hdiffpatch.ZStdConfig.fast()             # Optimized for speed
@@ -180,7 +180,7 @@ diff = hdiffpatch.diff(old_data, new_data, compression=config)
 
 * `level` (1-22): Compression level, higher = better compression
 * `window` (10-27): Window size as log2, larger = better compression
-* `workers` (0-200): Number of threads, 0 = single-threaded
+* `threads` (1-200): Number of threads, 1 = single-threaded
 
 #### ZlibConfig
 
@@ -216,10 +216,10 @@ Fine-grained control over LZMA compression:
 
 ```python
 # LZMA configuration
-config = hdiffpatch.LzmaConfig(level=9, window=23, thread_num=1)
+config = hdiffpatch.LzmaConfig(level=9, window=23, threads=1)
 
 # LZMA2 configuration (supports more threads)
-config = hdiffpatch.Lzma2Config(level=9, window=23, thread_num=4)
+config = hdiffpatch.Lzma2Config(level=9, window=23, threads=4)
 
 # Preset configurations available for both
 config = hdiffpatch.LzmaConfig.fast()
@@ -232,7 +232,7 @@ config = hdiffpatch.LzmaConfig.minimal_memory()
 
 * `level` (0-9): Compression level
 * `window` (12-30): Window size as log2
-* `thread_num`: Number of threads (1-2 for LZMA, 1-64 for LZMA2)
+* `threads`: Number of threads (1-2 for LZMA, 1-64 for LZMA2)
 
 #### BZip2Config
 
@@ -315,7 +315,7 @@ configs = {
     "zstd_fast": hdiffpatch.ZStdConfig.fast(),
     "zstd_best": hdiffpatch.ZStdConfig.best_compression(),
     "zlib_balanced": hdiffpatch.ZlibConfig.balanced(),
-    "lzma2_custom": hdiffpatch.Lzma2Config(level=6, window=20, thread_num=4),
+    "lzma2_custom": hdiffpatch.Lzma2Config(level=6, window=20, threads=4),
 }
 
 for name, config in configs.items():
