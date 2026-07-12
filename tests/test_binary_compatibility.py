@@ -146,3 +146,22 @@ def test_pinned_tamp_diff_can_be_applied(firmware_files, test_binaries_dir, suff
 
     result = hdiffpatch.apply(firmware_files["old"], diff_data)
     assert result == firmware_files["new"], f"Pinned {suffix} diff did not reconstruct new data correctly"
+
+
+def test_tamp_lazy_matching_compresses_smaller(firmware_files):
+    """Test that lazy matching produces a smaller diff than greedy matching.
+
+    Not guaranteed for arbitrary inputs, but deterministic for this fixed
+    firmware pair; both variants must also round-trip.
+    """
+    diff_lazy = hdiffpatch.diff(
+        firmware_files["old"], firmware_files["new"], compression=hdiffpatch.TampConfig(lazy_matching=True)
+    )
+    diff_greedy = hdiffpatch.diff(
+        firmware_files["old"], firmware_files["new"], compression=hdiffpatch.TampConfig(lazy_matching=False)
+    )
+
+    assert len(diff_lazy) < len(diff_greedy)
+
+    for diff_data in (diff_lazy, diff_greedy):
+        assert hdiffpatch.apply(firmware_files["old"], diff_data) == firmware_files["new"]
