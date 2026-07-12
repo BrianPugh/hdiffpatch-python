@@ -20,6 +20,7 @@ typedef struct {
     int             literal;        // 5..8 (fixed at 8)
     int             use_custom_dictionary;  // 0 or 1
     int             extended;       // 0 or 1; Tamp v2 extended format (RLE, long matches)
+    int             lazy_matching;  // 0 or 1; better compression at the cost of extra CPU
 } TCompressPlugin_tamp;
 
 // Tamp compression function
@@ -41,6 +42,7 @@ static hpatch_StreamPos_t _tamp_compress(const hdiff_TCompress* compressPlugin,
     conf.literal = static_cast<uint16_t>(tamp_plugin->literal);
     conf.use_custom_dictionary = static_cast<uint16_t>(tamp_plugin->use_custom_dictionary);
     conf.extended = static_cast<uint16_t>(tamp_plugin->extended);
+    conf.lazy_matching = static_cast<uint16_t>(tamp_plugin->lazy_matching);
 
     // Validate that custom dictionary is not used (not yet supported)
     if (conf.use_custom_dictionary) {
@@ -124,7 +126,8 @@ static const TCompressPlugin_tamp tampCompressPlugin = {
     10,  // window
     8,   // literal
     0,   // use_custom_dictionary
-    1    // extended
+    1,   // extended
+    1    // lazy_matching
 };
 
 //=============================================================================

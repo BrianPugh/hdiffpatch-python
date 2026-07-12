@@ -21,6 +21,10 @@ class TampConfig(BaseConfig):
         Use the Tamp v2 extended format (run-length encoding and longer
         matches) for better compression. Set to False to produce diffs
         that can be applied by Tamp v1.x decompressors.
+    lazy_matching : bool, default=True
+        Spend more CPU during compression searching for better matches.
+        Does not affect the stream format; any tamp decompressor can
+        read the output. Set to False for faster compression.
 
     Examples
     --------
@@ -49,6 +53,10 @@ class TampConfig(BaseConfig):
         default=True,
         validator=attrs.validators.instance_of(bool),
     )
+    lazy_matching: bool = attrs.field(
+        default=True,
+        validator=attrs.validators.instance_of(bool),
+    )
 
     @classmethod
     def fast(cls) -> "TampConfig":
@@ -59,7 +67,7 @@ class TampConfig(BaseConfig):
         TampConfig
             Configuration optimized for speed
         """
-        return cls(window=8)
+        return cls(window=8, lazy_matching=False)
 
     @classmethod
     def balanced(cls) -> "TampConfig":

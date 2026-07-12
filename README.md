@@ -273,6 +273,7 @@ config = hdiffpatch.TampConfig.minimal_memory()
 
 * `window` (8-15): Window size as power of 2
 * `extended` (bool, default `True`): Use the Tamp v2 extended format (run-length encoding, longer matches) for better compression. Set to `False` if the diff must be decompressed by a Tamp v1.x decoder.
+* `lazy_matching` (bool, default `True`): Spend more CPU during compression searching for better matches. Does not affect the stream format. Set to `False` for faster compression.
 
 ### Exceptions
 

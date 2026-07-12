@@ -14,12 +14,14 @@ class TestTampConfigClass:
         config = TampConfig()
         assert config.window == 10
         assert config.extended is True
+        assert config.lazy_matching is True
 
     def test_custom_construction(self):
         """Test TampConfig construction with custom parameters."""
-        config = TampConfig(window=12, extended=False)
+        config = TampConfig(window=12, extended=False, lazy_matching=False)
         assert config.window == 12
         assert config.extended is False
+        assert config.lazy_matching is False
 
 
 class TestTampConfigValidation:
@@ -49,6 +51,12 @@ class TestTampConfigValidation:
         with pytest.raises(TypeError, match="'extended' must be <class 'bool'>"):
             TampConfig(extended=extended)  # type: ignore[arg-type]
 
+    @pytest.mark.parametrize("lazy_matching", ["yes", 1, None])
+    def test_lazy_matching_invalid_type(self, lazy_matching):
+        """Test lazy_matching rejects invalid types."""
+        with pytest.raises(TypeError, match="'lazy_matching' must be <class 'bool'>"):
+            TampConfig(lazy_matching=lazy_matching)  # type: ignore[arg-type]
+
 
 class TestTampConfigClassmethods:
     """Test TampConfig classmethod constructors."""
@@ -60,24 +68,28 @@ class TestTampConfigClassmethods:
                 "fast",
                 {
                     "window": 8,
+                    "lazy_matching": False,
                 },
             ),
             (
                 "balanced",
                 {
                     "window": 10,
+                    "lazy_matching": True,
                 },
             ),
             (
                 "best_compression",
                 {
                     "window": 15,
+                    "lazy_matching": True,
                 },
             ),
             (
                 "minimal_memory",
                 {
                     "window": 8,
+                    "lazy_matching": True,
                 },
             ),
         ],
@@ -239,6 +251,19 @@ class TestTampConfigRoundTrip:
         for diff_data in (diff_v1, diff_extended):
             result = hdiffpatch.apply(large_repetitive_data["old"], diff_data)
             assert result == large_repetitive_data["new"]
+
+    @pytest.mark.parametrize("lazy_matching", [True, False])
+    def test_round_trip_lazy_matching(self, large_repetitive_data, lazy_matching):
+        """Test that streams round-trip with lazy matching on and off."""
+        config = TampConfig(lazy_matching=lazy_matching)
+
+        diff_data = hdiffpatch.diff(large_repetitive_data["old"], large_repetitive_data["new"], compression=config)
+
+        assert isinstance(diff_data, bytes)
+        assert len(diff_data) > 0
+
+        result = hdiffpatch.apply(large_repetitive_data["old"], diff_data)
+        assert result == large_repetitive_data["new"]
 
     def test_string_tamp_matches_default_config(self, large_repetitive_data):
         """Test that compression="tamp" and TampConfig() produce identical output."""

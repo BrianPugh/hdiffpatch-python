@@ -185,6 +185,7 @@ cdef extern from "tamp_compress_plugin.cpp":
         int             literal        # 5..8 (fixed at 8)
         int             use_custom_dictionary  # 0 or 1
         int             extended       # 0 or 1
+        int             lazy_matching  # 0 or 1
 
 # TCompressPlugin_bz2 structure for custom bzip2 configuration
 cdef extern from "compress_plugin_demo.h":
@@ -396,6 +397,7 @@ cdef TCompressPlugin_tamp* create_custom_tamp_plugin(tamp_config) except NULL:
     custom_plugin.literal = 8  # Fixed at 8
     custom_plugin.use_custom_dictionary = 0
     custom_plugin.extended = 1 if tamp_config.extended else 0
+    custom_plugin.lazy_matching = 1 if tamp_config.lazy_matching else 0
 
     return custom_plugin
 
