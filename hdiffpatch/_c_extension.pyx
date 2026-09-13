@@ -1282,7 +1282,7 @@ cdef cpp_bool _run_check_lite_diff(bytes old_data, bytes new_data, bytes lite_di
     return ok
 
 
-def create_lite_diff(
+def diff_lite(
     old_data: bytes,
     new_data: bytes,
     *,
@@ -1390,7 +1390,7 @@ def _check_lite_diff(
     new_data : bytes
         The expected reconstructed data.
     lite_diff : bytes
-        The lite-format diff produced by :func:`create_lite_diff`.
+        The lite-format diff produced by :func:`diff_lite`.
     compression : CompressionType, BaseConfig, or None, default=None
         The compression the diff was created with, used to select the matching
         decompressor.
