@@ -120,3 +120,82 @@ def recompress(
         If compression type is invalid
     """
     ...
+
+def create_lite_diff(
+    old_data: bytes,
+    new_data: bytes,
+    *,
+    compression: CompressionType | BaseConfig | None = None,
+    validate: bool = True,
+) -> bytes:
+    """Create an HPatchLite "lite"-format binary diff between old and new data.
+
+    Lite diffs are the compact format consumed by HDiffPatch's tiny on-device
+    applier (``hpatch_lite_patch``). This output is **not** interchangeable with
+    ``diff``/``apply``; it can only be applied by an HPatchLite-family patcher.
+
+    Parameters
+    ----------
+    old_data : bytes
+        The original data.
+    new_data : bytes
+        The new data to diff against.
+    compression : CompressionType, BaseConfig, or None, default=None
+        Compression algorithm to use. Only codecs decodable by HPatchLite are
+        accepted: ``"none"``, ``"zlib"``, ``"lzma"``, and ``"tamp"`` (the latter
+        via a device-side decompressor plugin). Passing ``"zstd"``, ``"lzma2"``,
+        or ``"bzip2"`` (as a name or ``*Config``) raises ``HDiffPatchError``.
+    validate : bool, default=True
+        If True, validates that the lite diff reconstructs new_data from old_data
+        using the vendored HPatchLite applier.
+
+    Returns
+    -------
+    bytes
+        The lite-format diff data as bytes.
+
+    Raises
+    ------
+    TypeError
+        If old_data or new_data are not bytes.
+    ValueError
+        If compression is not a recognized compression type.
+    HDiffPatchError
+        If the codec is not supported by HPatchLite, if diff creation fails, or
+        if roundtrip validation fails.
+    """
+    ...
+
+def _check_lite_diff(
+    old_data: bytes,
+    new_data: bytes,
+    lite_diff: bytes,
+    compression: CompressionType | BaseConfig | None = None,
+) -> bool:
+    """Verify a lite diff by reconstructing new_data via the HPatchLite applier.
+
+    Internal helper (not part of the public API).
+
+    Parameters
+    ----------
+    old_data : bytes
+        The original data.
+    new_data : bytes
+        The expected reconstructed data.
+    lite_diff : bytes
+        The lite-format diff produced by ``create_lite_diff``.
+    compression : CompressionType, BaseConfig, or None, default=None
+        The compression the diff was created with, used to select the matching
+        decompressor.
+
+    Returns
+    -------
+    bool
+        True if the lite diff reconstructs new_data from old_data.
+
+    Raises
+    ------
+    TypeError
+        If any of old_data, new_data, or lite_diff are not bytes.
+    """
+    ...
