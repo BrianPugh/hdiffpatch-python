@@ -1,14 +1,14 @@
-"""Unit tests for hdiffpatch.diff_lite (HPatchLite lite-format diffs)."""
+"""Unit tests for hdiffpatch.diff_lite / hdiffpatch.apply_lite (lite format)."""
 
 import pytest
 
 import hdiffpatch
-from hdiffpatch import check_lite_diff
+from hdiffpatch import apply_lite, diff_lite
 
 # Codecs HPatchLite can decode. "tamp" round-trips through the vendored tamp
 # decompressor plugin. The on-device compress-type tag written into the lite
-# header is asserted directly in test_diff_lite_header_compression_tag;
-# check_lite_diff itself treats that byte as opaque and does not validate it.
+# header is asserted directly in test_diff_lite_header_compression_tag; apply_lite
+# auto-detects the codec from that byte (there is no compression argument).
 LITE_SUPPORTED = [
     hdiffpatch.COMPRESSION_NONE,
     hdiffpatch.COMPRESSION_ZLIB,
@@ -36,30 +36,29 @@ LITE_UNSUPPORTED = [
 
 
 def test_diff_lite_basic(simple_text_data):
-    """A lite diff is non-empty bytes that reconstructs the target."""
+    """A lite diff is non-empty bytes that apply_lite reconstructs the target from."""
     old_data = simple_text_data["old"]
     new_data = simple_text_data["new"]
 
-    lite = hdiffpatch.diff_lite(old_data, new_data)
+    lite = diff_lite(old_data, new_data)
 
     assert isinstance(lite, bytes)
     assert len(lite) > 0
-    assert check_lite_diff(old_data, new_data, lite)
+    assert apply_lite(old_data, lite) == new_data
 
 
 @pytest.mark.parametrize("compression", LITE_SUPPORTED)
 def test_diff_lite_round_trip(compression, large_repetitive_data):
-    """Round-trip via the vendored HPatchLite applier for each supported codec."""
+    """diff_lite -> apply_lite round-trips for each supported codec (auto-detected)."""
     old_data = large_repetitive_data["old"]
     new_data = large_repetitive_data["new"]
 
-    lite = hdiffpatch.diff_lite(old_data, new_data, compression=compression)
+    lite = diff_lite(old_data, new_data, compression=compression)
 
     assert isinstance(lite, bytes)
     assert len(lite) > 0
-    assert check_lite_diff(old_data, new_data, lite, compression=compression), (
-        f"Lite round-trip failed for {compression}"
-    )
+    # apply_lite takes no compression argument: it reads the codec from the header.
+    assert apply_lite(old_data, lite) == new_data, f"Lite round-trip failed for {compression}"
 
 
 @pytest.mark.parametrize("compression", LITE_SUPPORTED)
@@ -68,9 +67,9 @@ def test_diff_lite_round_trip_binary(compression, binary_data):
     old_data = binary_data["old"]
     new_data = binary_data["new"]
 
-    lite = hdiffpatch.diff_lite(old_data, new_data, compression=compression)
+    lite = diff_lite(old_data, new_data, compression=compression)
 
-    assert check_lite_diff(old_data, new_data, lite, compression=compression)
+    assert apply_lite(old_data, lite) == new_data
 
 
 @pytest.mark.parametrize(
@@ -82,28 +81,28 @@ def test_diff_lite_round_trip_binary(compression, binary_data):
     ],
 )
 def test_diff_lite_config_objects(config, highly_compressible_data):
-    """Supported ``*Config`` objects produce valid lite diffs."""
+    """Supported ``*Config`` objects produce lite diffs apply_lite can reconstruct."""
     old_data = highly_compressible_data["old"]
     new_data = highly_compressible_data["new"]
 
-    lite = hdiffpatch.diff_lite(old_data, new_data, compression=config)
+    lite = diff_lite(old_data, new_data, compression=config)
 
-    assert check_lite_diff(old_data, new_data, lite, compression=config)
+    assert apply_lite(old_data, lite) == new_data
 
 
 @pytest.mark.parametrize("compression", LITE_SUPPORTED)
 def test_diff_lite_header_compression_tag(compression, large_repetitive_data):
     """The lite header's compress-type byte matches the device dispatch tag.
 
-    hpatch_lite_open reads this byte (offset 2, after the b"hI" magic) opaquely
-    and does not validate it, so the round-trip validator cannot catch a wrong
-    tag. Assert the raw byte directly to cover the device dispatch contract,
-    including the vendor-specific tamp value.
+    hpatch_lite_open reads this byte (offset 2, after the b"hI" magic) and it is
+    what apply_lite (and the on-device applier) uses to pick the decompressor.
+    Assert the raw byte directly to cover the dispatch contract, including the
+    vendor-specific tamp value.
     """
     old_data = large_repetitive_data["old"]
     new_data = large_repetitive_data["new"]
 
-    lite = hdiffpatch.diff_lite(old_data, new_data, compression=compression)
+    lite = diff_lite(old_data, new_data, compression=compression)
 
     assert lite[:2] == b"hI"
     assert lite[2] == LITE_HEADER_TAG[compression]
@@ -115,12 +114,12 @@ def test_diff_lite_validate_default_catches_round_trip(simple_text_data):
     new_data = simple_text_data["new"]
 
     # Should not raise; validation runs the real applier internally.
-    lite_validated = hdiffpatch.diff_lite(old_data, new_data, validate=True)
-    lite_unvalidated = hdiffpatch.diff_lite(old_data, new_data, validate=False)
+    lite_validated = diff_lite(old_data, new_data, validate=True)
+    lite_unvalidated = diff_lite(old_data, new_data, validate=False)
 
     # Both paths emit the same bytes; validation only adds a check.
     assert lite_validated == lite_unvalidated
-    assert check_lite_diff(old_data, new_data, lite_unvalidated)
+    assert apply_lite(old_data, lite_unvalidated) == new_data
 
 
 @pytest.mark.parametrize("compression", LITE_UNSUPPORTED)
@@ -130,7 +129,7 @@ def test_diff_lite_rejects_unsupported_codec(compression, simple_text_data):
     new_data = simple_text_data["new"]
 
     with pytest.raises(hdiffpatch.HDiffPatchError, match="not supported by HPatchLite"):
-        hdiffpatch.diff_lite(old_data, new_data, compression=compression)
+        diff_lite(old_data, new_data, compression=compression)
 
 
 @pytest.mark.parametrize(
@@ -147,7 +146,7 @@ def test_diff_lite_rejects_unsupported_config(config, simple_text_data):
     new_data = simple_text_data["new"]
 
     with pytest.raises(hdiffpatch.HDiffPatchError, match="not supported by HPatchLite"):
-        hdiffpatch.diff_lite(old_data, new_data, compression=config)
+        diff_lite(old_data, new_data, compression=config)
 
 
 def test_diff_lite_invalid_compression_type(simple_text_data):
@@ -156,30 +155,67 @@ def test_diff_lite_invalid_compression_type(simple_text_data):
     new_data = simple_text_data["new"]
 
     with pytest.raises(ValueError, match="Invalid compression type"):
-        hdiffpatch.diff_lite(old_data, new_data, compression="not_a_codec")  # type: ignore[arg-type]
+        diff_lite(old_data, new_data, compression="not_a_codec")  # type: ignore[arg-type]
 
 
 @pytest.mark.parametrize("bad_old,bad_new", [("str", b"bytes"), (b"bytes", "str"), (123, 456)])
 def test_diff_lite_type_errors(bad_old, bad_new):
     """Non-bytes inputs raise TypeError."""
     with pytest.raises(TypeError):
-        hdiffpatch.diff_lite(bad_old, bad_new)
+        diff_lite(bad_old, bad_new)
 
 
-def testcheck_lite_diff_detects_wrong_target(simple_text_data):
-    """The validator returns False when the diff does not match the target."""
+def test_apply_lite_detects_wrong_old(simple_text_data, binary_data):
+    """Applying a lite diff against the wrong old data does not yield the target.
+
+    The patch reconstructs some bytes from whatever old data it is given, but the
+    result must not equal new_data unless the correct old_data was used.
+    """
     old_data = simple_text_data["old"]
     new_data = simple_text_data["new"]
 
-    lite = hdiffpatch.diff_lite(old_data, new_data)
+    lite = diff_lite(old_data, new_data)
 
-    # Use a wrong target of the *same length* as new_data so validation gets
-    # past the header size check and actually exercises the reconstructed-byte
-    # comparison (a different-length target would be rejected earlier).
-    wrong_target = bytes(b ^ 0xFF for b in new_data)
-    assert len(wrong_target) == len(new_data)
-    assert wrong_target != new_data
-    assert not check_lite_diff(old_data, wrong_target, lite)
+    # Correct old data reconstructs the target exactly.
+    assert apply_lite(old_data, lite) == new_data
+
+    # A wrong (same-length) old image must not reconstruct new_data. Either the
+    # applier rejects the mismatched source or it produces different bytes.
+    wrong_old = bytes(b ^ 0xFF for b in old_data)
+    assert wrong_old != old_data
+    try:
+        result = apply_lite(wrong_old, lite)
+    except hdiffpatch.HDiffPatchError:
+        pass
+    else:
+        assert result != new_data
+
+
+@pytest.mark.parametrize("compression", LITE_SUPPORTED)
+def test_apply_lite_auto_detects_codec(compression, large_repetitive_data):
+    """apply_lite reconstructs without being told the codec, for every codec."""
+    old_data = large_repetitive_data["old"]
+    new_data = large_repetitive_data["new"]
+
+    lite = diff_lite(old_data, new_data, compression=compression)
+
+    # No compression argument is passed; the header is self-describing.
+    assert apply_lite(old_data, lite) == new_data
+
+
+def test_apply_lite_rejects_invalid_diff(simple_text_data):
+    """A corrupt / non-lite diff buffer raises HDiffPatchError, not a crash."""
+    old_data = simple_text_data["old"]
+
+    with pytest.raises(hdiffpatch.HDiffPatchError):
+        apply_lite(old_data, b"not a valid lite diff header")
+
+
+@pytest.mark.parametrize("bad_old,bad_diff", [("str", b"bytes"), (b"bytes", "str"), (123, 456)])
+def test_apply_lite_type_errors(bad_old, bad_diff):
+    """Non-bytes inputs raise TypeError."""
+    with pytest.raises(TypeError):
+        apply_lite(bad_old, bad_diff)
 
 
 def test_diff_lite_not_standard_apply_compatible(simple_text_data):
@@ -187,7 +223,7 @@ def test_diff_lite_not_standard_apply_compatible(simple_text_data):
     old_data = simple_text_data["old"]
     new_data = simple_text_data["new"]
 
-    lite = hdiffpatch.diff_lite(old_data, new_data)
+    lite = diff_lite(old_data, new_data)
 
     with pytest.raises(hdiffpatch.HDiffPatchError):
         hdiffpatch.apply(old_data, lite)
@@ -199,7 +235,7 @@ def test_diff_lite_in_public_api():
     assert hdiffpatch.diff_lite is not None
 
 
-def test_check_lite_diff_in_public_api():
-    """check_lite_diff is exported from the package namespace."""
-    assert "check_lite_diff" in hdiffpatch.__all__
-    assert hdiffpatch.check_lite_diff is not None
+def test_apply_lite_in_public_api():
+    """apply_lite is exported from the package namespace."""
+    assert "apply_lite" in hdiffpatch.__all__
+    assert hdiffpatch.apply_lite is not None

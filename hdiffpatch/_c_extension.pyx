@@ -223,6 +223,21 @@ cdef extern from "libHDiffPatch/HDiff/diff_for_hpatch_lite.h":
                                                  const unsigned char* lite_diff, const unsigned char* lite_diff_end,
                                                  hpatch_TDecompress* decompressPlugin) except +hdiffpatch_translate_exception nogil
 
+    # Peeks the lite header to recover the self-describing compress-type byte
+    # without applying the diff, so apply_lite can pick the matching decompressor.
+    cpp_bool c_check_lite_diff_open "check_lite_diff_open"(const unsigned char* lite_diff, const unsigned char* lite_diff_end,
+                                                           hpi_compressType* out_compress_type) except +hdiffpatch_translate_exception nogil
+
+# Host-side lite applier shim (see apply_lite_shim.hpp). Mirrors the vendored
+# check_lite_diff() wiring but writes the reconstruction into an output vector.
+cdef extern from "apply_lite_shim.hpp" namespace "hdiffpatch_lite_shim":
+    int c_apply_lite_diff "hdiffpatch_lite_shim::apply_lite_diff"(
+        const unsigned char* oldData, const unsigned char* oldData_end,
+        const unsigned char* lite_diff, const unsigned char* lite_diff_end,
+        hpatch_TDecompress* decompressPlugin,
+        hpi_compressType* out_compress_type,
+        vector[unsigned char]& out_new) except +hdiffpatch_translate_exception nogil
+
 # TCompressPlugin_zlib structure for custom zlib configuration
 cdef extern from "compress_plugin_demo.h":
     ctypedef struct TCompressPlugin_zlib:
@@ -1370,44 +1385,80 @@ def diff_lite(
     return diff_bytes
 
 
-def check_lite_diff(
-    old_data: bytes,
-    new_data: bytes,
-    lite_diff: bytes,
-    compression: Union[CompressionType, 'BaseConfig', None] = None,
-) -> bool:
-    """Verify a lite diff reconstructs new_data from old_data.
+def apply_lite(old_data: bytes, lite_diff: bytes) -> bytes:
+    """Apply an HPatchLite "lite"-format patch to reconstruct the new data.
 
-    This is the Python-side way to round-trip-check a lite diff produced by
-    :func:`diff_lite`: there is no ``apply_lite`` in this binding because the
-    lite applier is on-device C. It runs the vendored ``check_lite_diff`` path,
-    which opens the diff with ``hpatch_lite_open`` and reconstructs it with
-    ``hpatch_lite_patch`` (the real on-device applier), comparing the result
-    against new_data.
+    This is the lite-format counterpart of :func:`apply`: given the original
+    ``old_data`` and a ``lite_diff`` produced by :func:`diff_lite`, it returns
+    the reconstructed new bytes. It drives the vendored HPatchLite applier
+    (``hpatch_lite_open`` + ``hpatch_lite_patch``) -- the same code path a
+    device runs -- so a successful call is a genuine end-to-end round-trip.
+
+    The compression codec is auto-detected from the lite header (which is
+    self-describing, exactly like the standard patch format), so there is no
+    ``compression`` argument. Native codecs (``none``/``zlib``/``lzma``) use
+    their upstream ``hpi_compressType`` values; the vendor-specific byte
+    ``0xF0`` selects the tamp decompressor.
 
     Parameters
     ----------
     old_data : bytes
-        The original data.
-    new_data : bytes
-        The expected reconstructed data.
+        The original data the patch was created against.
     lite_diff : bytes
         The lite-format diff produced by :func:`diff_lite`.
-    compression : CompressionType, BaseConfig, or None, default=None
-        The compression the diff was created with, used to select the matching
-        decompressor.
 
     Returns
     -------
-    bool
-        True if the lite diff reconstructs new_data from old_data.
+    bytes
+        The reconstructed new data.
 
     Raises
     ------
     TypeError
-        If any of old_data, new_data, or lite_diff are not bytes.
+        If old_data or lite_diff are not bytes.
+    HDiffPatchError
+        If the header is invalid, names a codec whose decompressor is not
+        available, or the patch fails to reconstruct the data.
     """
-    if not (isinstance(old_data, bytes) and isinstance(new_data, bytes) and isinstance(lite_diff, bytes)):
-        raise TypeError("old_data, new_data, and lite_diff must be bytes")
-    codec_name = _lite_normalize_compression(compression)
-    return bool(_run_check_lite_diff(old_data, new_data, lite_diff, codec_name))
+    if not (isinstance(old_data, bytes) and isinstance(lite_diff, bytes)):
+        raise TypeError("old_data and lite_diff must be bytes")
+
+    cdef const unsigned char* old_ptr = <const unsigned char*>PyBytes_AsString(old_data)
+    cdef const unsigned char* old_end = old_ptr + PyBytes_Size(old_data)
+    cdef const unsigned char* diff_ptr = <const unsigned char*>PyBytes_AsString(lite_diff)
+    cdef const unsigned char* diff_end = diff_ptr + PyBytes_Size(lite_diff)
+
+    # Peek the self-describing compress-type byte to pick the decompressor,
+    # mirroring how apply() auto-detects the codec from the diff itself.
+    cdef hpi_compressType compress_type
+    if not c_check_lite_diff_open(diff_ptr, diff_end, &compress_type):
+        raise HDiffPatchError("Invalid or corrupt lite diff header")
+
+    cdef int ct = <int>compress_type
+    cdef hpatch_TDecompress* decompress_plugin = NULL
+    if ct == <int>hpi_compressType_no:
+        decompress_plugin = NULL
+    elif ct == <int>hpi_compressType_zlib:
+        decompress_plugin = <hpatch_TDecompress*>&zlibDecompressPlugin
+    elif ct == <int>hpi_compressType_lzma:
+        decompress_plugin = <hpatch_TDecompress*>&lzmaDecompressPlugin
+    elif ct == _HPI_COMPRESS_TYPE_TAMP:
+        decompress_plugin = <hpatch_TDecompress*>&tampDecompressPlugin
+    else:
+        raise HDiffPatchError(
+            f"Lite diff uses compress-type byte 0x{ct:02X}, which has no "
+            f"decompressor available in this build"
+        )
+
+    cdef vector[unsigned char] out_vector
+    cdef int rc
+    with nogil:
+        rc = c_apply_lite_diff(old_ptr, old_end, diff_ptr, diff_end,
+                               decompress_plugin, NULL, out_vector)
+
+    if rc == 2:
+        raise HDiffPatchError("Failed to open the decompressor for the lite diff")
+    if rc != 0:
+        raise HDiffPatchError("Failed to apply lite diff: it does not reconstruct from old_data")
+
+    return PyBytes_FromStringAndSize(<char*>out_vector.data(), out_vector.size())

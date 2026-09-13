@@ -166,38 +166,36 @@ def diff_lite(
     """
     ...
 
-def check_lite_diff(
-    old_data: bytes,
-    new_data: bytes,
-    lite_diff: bytes,
-    compression: CompressionType | BaseConfig | None = None,
-) -> bool:
-    """Verify a lite diff reconstructs new_data from old_data.
+def apply_lite(old_data: bytes, lite_diff: bytes) -> bytes:
+    """Apply an HPatchLite "lite"-format patch to reconstruct the new data.
 
-    Round-trips the lite diff through the vendored HPatchLite applier
-    (``hpatch_lite_open`` + ``hpatch_lite_patch``). There is no ``apply_lite``
-    in this binding because the lite applier is on-device C.
+    The lite-format counterpart of ``apply``. Drives the vendored HPatchLite
+    applier (``hpatch_lite_open`` + ``hpatch_lite_patch``) -- the same code path
+    a device runs -- to reconstruct the new bytes from ``old_data`` and a
+    ``lite_diff`` produced by ``diff_lite``.
+
+    The compression codec is auto-detected from the self-describing lite header
+    (native ``none``/``zlib``/``lzma`` by their upstream values, tamp by the
+    vendor-specific ``0xF0`` byte), so there is no ``compression`` argument.
 
     Parameters
     ----------
     old_data : bytes
-        The original data.
-    new_data : bytes
-        The expected reconstructed data.
+        The original data the patch was created against.
     lite_diff : bytes
         The lite-format diff produced by ``diff_lite``.
-    compression : CompressionType, BaseConfig, or None, default=None
-        The compression the diff was created with, used to select the matching
-        decompressor.
 
     Returns
     -------
-    bool
-        True if the lite diff reconstructs new_data from old_data.
+    bytes
+        The reconstructed new data.
 
     Raises
     ------
     TypeError
-        If any of old_data, new_data, or lite_diff are not bytes.
+        If old_data or lite_diff are not bytes.
+    HDiffPatchError
+        If the header is invalid, names a codec whose decompressor is not
+        available, or the patch fails to reconstruct the data.
     """
     ...

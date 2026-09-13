@@ -17,7 +17,7 @@ __all__ = [
     "diff",
     "diff_lite",
     "apply",
-    "check_lite_diff",
+    "apply_lite",
     "recompress",
     # Configuration classes
     "BaseConfig",
@@ -50,7 +50,7 @@ from ._c_extension import (
     HDiffPatchError,
     # Core functions
     apply,
-    check_lite_diff,
+    apply_lite,
     diff,
     diff_lite,
     recompress,
