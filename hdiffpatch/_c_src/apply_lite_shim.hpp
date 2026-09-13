@@ -42,6 +42,7 @@ struct TApplyListener : public hpatchi_listener_t {
     const hpi_byte*         oldData;
     const hpi_byte*         oldData_end;
     std::vector<unsigned char>* out;
+    hpi_pos_t               remainingNew;  // declared output bytes not yet written
 
     TApplyListener() : decompressor(0), decompressPlugin(0) {}
     ~TApplyListener() {
@@ -79,11 +80,19 @@ struct TApplyListener : public hpatchi_listener_t {
         return hpi_TRUE;
     }
 
-    // Append reconstructed new bytes to the output vector.
+    // Append reconstructed new bytes to the output vector. hpatch_lite_patch only
+    // checks the total written against newSize after every cover has run, so a
+    // malformed diff (e.g. an inflated coverCount replaying old_data) could push
+    // the output far past the declared size before that check fires. Cap each
+    // write against the remaining declared length so we abort on the first
+    // over-large write instead of allocating an unbounded amount first.
     static hpi_BOOL _write_new(struct hpatchi_listener_t* listener,
                                const hpi_byte* data, hpi_size_t data_size) {
         TApplyListener& self = *(TApplyListener*)listener;
+        if (data_size > self.remainingNew)
+            return hpi_FALSE;
         self.out->insert(self.out->end(), data, data + data_size);
+        self.remainingNew -= data_size;
         return hpi_TRUE;
     }
 
@@ -144,6 +153,7 @@ static inline int apply_lite_diff(const hpi_byte* oldData, const hpi_byte* oldDa
     out_new.clear();
     out_new.reserve((size_t)saved_newSize);
     listener.out = &out_new;
+    listener.remainingNew = saved_newSize;
 
     std::vector<unsigned char> cache(hpatch_kFileIOBufBetterSize);
     if (!hpatch_lite_patch(&listener, saved_newSize, cache.data(), (hpi_size_t)cache.size()))

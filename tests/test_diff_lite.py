@@ -1,5 +1,9 @@
 """Unit tests for hdiffpatch.diff_lite / hdiffpatch.apply_lite (lite format)."""
 
+import subprocess
+import sys
+import textwrap
+
 import pytest
 
 import hdiffpatch
@@ -239,3 +243,112 @@ def test_apply_lite_in_public_api():
     """apply_lite is exported from the package namespace."""
     assert "apply_lite" in hdiffpatch.__all__
     assert hdiffpatch.apply_lite is not None
+
+
+# --- memory-exhaustion regression (apply_lite_shim._write_new output cap) ---
+
+# Size of the old image the bomb replays, and how many times it replays it. A
+# valid lite header declares newSize == 0, but the patch stream instructs the
+# applier to copy OLD_SIZE bytes out of old_data BOMB_COVERS times. Without the
+# per-write cap the reconstruction buffer grows to OLD_SIZE * BOMB_COVERS before
+# hpatch_lite_patch's final newSize check fires; with the cap the first
+# over-large write is rejected immediately.
+_BOMB_OLD_SIZE = 1 << 20  # 1 MiB
+_BOMB_COVERS = 512  # -> ~512 MiB of output if the cap is missing
+
+
+def _lite_varint(v: int) -> bytes:
+    """Encode ``v`` as HPatchLite's MSB-first base-128 varint (high bit = continue)."""
+    parts = []
+    while True:
+        parts.append(v & 0x7F)
+        v >>= 7
+        if v == 0:
+            break
+    parts.reverse()
+    return bytes(p | 0x80 for p in parts[:-1]) + bytes([parts[-1]])
+
+
+def _build_output_size_bomb() -> bytes:
+    """Craft a malformed lite diff that replays old_data far past its declared newSize.
+
+    The header declares compress-type ``none`` and newSize/uncompressSize of 0
+    bytes each (both values 0). Each cover copies ``_BOMB_OLD_SIZE`` bytes from
+    old_data starting at oldPos 0 (isNotNeedSubDiff set, so no sub-diff bytes are
+    consumed and the diff stays tiny), with a zero newPos delta so no diff-copy
+    bytes are needed either.
+    """
+    # Header: b"hI" + compressType(none) + flags(versionCode<<6 | uSizeBytes<<3 | newSizeBytes)
+    header = bytes([0x68, 0x49, 0x00, 0x40])  # version 1, 0 newSize bytes, 0 uncompressSize bytes
+
+    stream = bytearray()
+    stream += _lite_varint(_BOMB_COVERS)  # coverCount
+    for i in range(_BOMB_COVERS):
+        stream += _lite_varint(_BOMB_OLD_SIZE)  # cover_length
+        if i == 0:
+            # add-mode, oldPos delta 0 (fits in tag low bits): oldPos = 0
+            stream += bytes([0x80])  # isNotNeedSubDiff
+        else:
+            # subtract-mode with continuation: oldPos = oldPosBack - OLD_SIZE = 0
+            stream += bytes([0xE0])  # isNotNeedSubDiff | subtract | continue
+            stream += _lite_varint(_BOMB_OLD_SIZE)
+        stream += bytes([0x00])  # newPos delta 0
+
+    return header + bytes(stream)
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="peak-RSS measurement uses the resource module")
+def test_apply_lite_output_size_bomb_does_not_over_allocate():
+    """A malformed lite diff must not allocate output far beyond the declared newSize.
+
+    Runs apply_lite in a subprocess on a patch-bomb (tiny diff, ~512 MiB of
+    replayed output) and asserts the process's peak RSS growth stays small. Both
+    the fixed and unfixed shim ultimately raise HDiffPatchError, so this measures
+    the allocation the write-cap prevents rather than the return value.
+    """
+    bomb = _build_output_size_bomb()
+
+    child = textwrap.dedent(
+        f"""
+        import resource
+        import sys
+
+        import hdiffpatch
+
+        OLD_SIZE = {_BOMB_OLD_SIZE}
+        old_data = bytes(OLD_SIZE)
+        bomb = sys.stdin.buffer.read()
+
+        # Warm up imports/allocator so the baseline high-water mark is settled.
+        warm = hdiffpatch.diff_lite(b"hello", b"hello!")
+        assert hdiffpatch.apply_lite(b"hello", warm) == b"hello!"
+
+        before = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        try:
+            hdiffpatch.apply_lite(old_data, bomb)
+            outcome = "no_error"
+        except hdiffpatch.HDiffPatchError:
+            outcome = "rejected"
+        after = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+
+        # ru_maxrss is bytes on macOS, KiB on Linux.
+        scale = 1 if sys.platform == "darwin" else 1024
+        grew_mib = (after - before) * scale / (1024 * 1024)
+        print(f"{{outcome}} {{grew_mib:.1f}}")
+        """
+    )
+
+    proc = subprocess.run(  # noqa: S603  # trusted: sys.executable + a fixed inline script
+        [sys.executable, "-c", child],
+        input=bomb,
+        capture_output=True,
+        timeout=120,
+    )
+    assert proc.returncode == 0, f"child failed: {proc.stderr.decode(errors='replace')}"
+    outcome, grew_raw = proc.stdout.decode().split()
+    grew_mib = float(grew_raw)
+
+    assert outcome == "rejected", "malformed bomb diff should raise HDiffPatchError"
+    # ~512 MiB would be allocated without the cap; allow generous headroom for the
+    # allocator while still being far below the uncapped footprint.
+    assert grew_mib < 128, f"apply_lite over-allocated on a malformed diff: grew {grew_mib:.1f} MiB"
