@@ -3,7 +3,7 @@
 import pytest
 
 import hdiffpatch
-from hdiffpatch._c_extension import _check_lite_diff
+from hdiffpatch import check_lite_diff
 
 # Codecs HPatchLite can decode. "tamp" round-trips through the vendored tamp
 # decompressor plugin. The on-device compress-type tag written into the lite
@@ -44,7 +44,7 @@ def test_diff_lite_basic(simple_text_data):
 
     assert isinstance(lite, bytes)
     assert len(lite) > 0
-    assert _check_lite_diff(old_data, new_data, lite)
+    assert check_lite_diff(old_data, new_data, lite)
 
 
 @pytest.mark.parametrize("compression", LITE_SUPPORTED)
@@ -57,7 +57,7 @@ def test_diff_lite_round_trip(compression, large_repetitive_data):
 
     assert isinstance(lite, bytes)
     assert len(lite) > 0
-    assert _check_lite_diff(old_data, new_data, lite, compression=compression), (
+    assert check_lite_diff(old_data, new_data, lite, compression=compression), (
         f"Lite round-trip failed for {compression}"
     )
 
@@ -70,7 +70,7 @@ def test_diff_lite_round_trip_binary(compression, binary_data):
 
     lite = hdiffpatch.diff_lite(old_data, new_data, compression=compression)
 
-    assert _check_lite_diff(old_data, new_data, lite, compression=compression)
+    assert check_lite_diff(old_data, new_data, lite, compression=compression)
 
 
 @pytest.mark.parametrize(
@@ -88,7 +88,7 @@ def test_diff_lite_config_objects(config, highly_compressible_data):
 
     lite = hdiffpatch.diff_lite(old_data, new_data, compression=config)
 
-    assert _check_lite_diff(old_data, new_data, lite, compression=config)
+    assert check_lite_diff(old_data, new_data, lite, compression=config)
 
 
 @pytest.mark.parametrize("compression", LITE_SUPPORTED)
@@ -120,7 +120,7 @@ def test_diff_lite_validate_default_catches_round_trip(simple_text_data):
 
     # Both paths emit the same bytes; validation only adds a check.
     assert lite_validated == lite_unvalidated
-    assert _check_lite_diff(old_data, new_data, lite_unvalidated)
+    assert check_lite_diff(old_data, new_data, lite_unvalidated)
 
 
 @pytest.mark.parametrize("compression", LITE_UNSUPPORTED)
@@ -166,7 +166,7 @@ def test_diff_lite_type_errors(bad_old, bad_new):
         hdiffpatch.diff_lite(bad_old, bad_new)
 
 
-def test_check_lite_diff_detects_wrong_target(simple_text_data):
+def testcheck_lite_diff_detects_wrong_target(simple_text_data):
     """The validator returns False when the diff does not match the target."""
     old_data = simple_text_data["old"]
     new_data = simple_text_data["new"]
@@ -179,7 +179,7 @@ def test_check_lite_diff_detects_wrong_target(simple_text_data):
     wrong_target = bytes(b ^ 0xFF for b in new_data)
     assert len(wrong_target) == len(new_data)
     assert wrong_target != new_data
-    assert not _check_lite_diff(old_data, wrong_target, lite)
+    assert not check_lite_diff(old_data, wrong_target, lite)
 
 
 def test_diff_lite_not_standard_apply_compatible(simple_text_data):
@@ -197,3 +197,9 @@ def test_diff_lite_in_public_api():
     """diff_lite is exported from the package namespace."""
     assert "diff_lite" in hdiffpatch.__all__
     assert hdiffpatch.diff_lite is not None
+
+
+def test_check_lite_diff_in_public_api():
+    """check_lite_diff is exported from the package namespace."""
+    assert "check_lite_diff" in hdiffpatch.__all__
+    assert hdiffpatch.check_lite_diff is not None

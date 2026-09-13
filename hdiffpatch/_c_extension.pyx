@@ -1370,18 +1370,20 @@ def diff_lite(
     return diff_bytes
 
 
-def _check_lite_diff(
+def check_lite_diff(
     old_data: bytes,
     new_data: bytes,
     lite_diff: bytes,
     compression: Union[CompressionType, 'BaseConfig', None] = None,
 ) -> bool:
-    """Verify a lite diff by reconstructing new_data via the HPatchLite applier.
+    """Verify a lite diff reconstructs new_data from old_data.
 
-    Internal helper (not part of the public API). Runs the vendored
-    ``check_lite_diff`` path, which opens the diff with ``hpatch_lite_open`` and
-    reconstructs it with ``hpatch_lite_patch`` (the real on-device applier),
-    comparing the result against new_data.
+    This is the Python-side way to round-trip-check a lite diff produced by
+    :func:`diff_lite`: there is no ``apply_lite`` in this binding because the
+    lite applier is on-device C. It runs the vendored ``check_lite_diff`` path,
+    which opens the diff with ``hpatch_lite_open`` and reconstructs it with
+    ``hpatch_lite_patch`` (the real on-device applier), comparing the result
+    against new_data.
 
     Parameters
     ----------
