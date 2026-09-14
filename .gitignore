@@ -247,3 +247,7 @@ hdiffpatch/_c_extension.cpp
 hdiffpatch/*.html
 # Poetry
 poetry.toml
+
+# Claude Code (local session state, agent worktrees, etc.)
+.claude/
+CLAUDE.local.md

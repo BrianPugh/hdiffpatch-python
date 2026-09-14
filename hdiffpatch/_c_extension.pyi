@@ -120,3 +120,82 @@ def recompress(
         If compression type is invalid
     """
     ...
+
+def diff_lite(
+    old_data: bytes,
+    new_data: bytes,
+    *,
+    compression: CompressionType | BaseConfig | None = None,
+    validate: bool = True,
+) -> bytes:
+    """Create an HPatchLite "lite"-format binary diff between old and new data.
+
+    Lite diffs are the compact format consumed by HDiffPatch's tiny on-device
+    applier (``hpatch_lite_patch``). This output is **not** interchangeable with
+    ``diff``/``apply``; it can only be applied by an HPatchLite-family patcher.
+
+    Parameters
+    ----------
+    old_data : bytes
+        The original data.
+    new_data : bytes
+        The new data to diff against.
+    compression : CompressionType, BaseConfig, or None, default=None
+        Compression algorithm to use. Only codecs decodable by HPatchLite are
+        accepted: ``"none"``, ``"zlib"``, ``"lzma"``, and ``"tamp"`` (the latter
+        via a device-side decompressor plugin). Passing ``"zstd"``, ``"lzma2"``,
+        or ``"bzip2"`` (as a name or ``*Config``) raises ``HDiffPatchError``.
+    validate : bool, default=True
+        If True, validates that the lite diff reconstructs new_data from old_data
+        using the vendored HPatchLite applier.
+
+    Returns
+    -------
+    bytes
+        The lite-format diff data as bytes.
+
+    Raises
+    ------
+    TypeError
+        If old_data or new_data are not bytes.
+    ValueError
+        If compression is not a recognized compression type.
+    HDiffPatchError
+        If the codec is not supported by HPatchLite, if diff creation fails, or
+        if roundtrip validation fails.
+    """
+    ...
+
+def apply_lite(old_data: bytes, lite_diff: bytes) -> bytes:
+    """Apply an HPatchLite "lite"-format patch to reconstruct the new data.
+
+    The lite-format counterpart of ``apply``. Drives the vendored HPatchLite
+    applier (``hpatch_lite_open`` + ``hpatch_lite_patch``) -- the same code path
+    a device runs -- to reconstruct the new bytes from ``old_data`` and a
+    ``lite_diff`` produced by ``diff_lite``.
+
+    The compression codec is auto-detected from the self-describing lite header
+    (native ``none``/``zlib``/``lzma`` by their upstream values, tamp by the
+    vendor-specific ``0xF0`` byte), so there is no ``compression`` argument.
+
+    Parameters
+    ----------
+    old_data : bytes
+        The original data the patch was created against.
+    lite_diff : bytes
+        The lite-format diff produced by ``diff_lite``.
+
+    Returns
+    -------
+    bytes
+        The reconstructed new data.
+
+    Raises
+    ------
+    TypeError
+        If old_data or lite_diff are not bytes.
+    HDiffPatchError
+        If the header is invalid, names a codec whose decompressor is not
+        available, or the patch fails to reconstruct the data.
+    """
+    ...

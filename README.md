@@ -52,4 +52,19 @@ assert hdiffpatch.apply(old, patch_lzma) == new
 
 A patch is typically much smaller than the new data itself, making **hdiffpatch** ideal for bandwidth-constrained applications like over-the-air firmware updates.
 
+## Lite-format diffs for HPatchLite
+
+For extremely memory-constrained devices, `diff_lite` produces the compact "lite" format consumed by HDiffPatch's tiny on-device applier, [HPatchLite](https://github.com/sisong/HPatchLite) (`hpatch_lite_patch`). Only codecs the device can decode are accepted — `"none"`, `"zlib"`, `"lzma"`, and `"tamp"` (the last via a device-side decompressor plugin); `"zstd"`, `"lzma2"`, and `"bzip2"` are rejected with a clear error.
+
+```python
+import hdiffpatch
+
+lite = hdiffpatch.diff_lite(old, new, compression="lzma")
+restored = hdiffpatch.apply_lite(old, lite)   # == new
+```
+
+`apply_lite` is the lite-format counterpart of `apply`: it drives the vendored HPatchLite applier (the same code path a device runs) to reconstruct the new data. The codec is auto-detected from the self-describing lite header, so `apply_lite` takes no `compression` argument.
+
+Lite diffs are **not** interchangeable with `diff`/`apply` — they can only be applied by an HPatchLite-family patcher (`apply_lite` here, or an HPatchLite build on the target device), and the standard `apply` rejects them.
+
 See the [documentation](https://hdiffpatch-python.readthedocs.io) for fine-grained compression configuration, diff recompression, and performance benchmarks.

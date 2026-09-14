@@ -15,7 +15,9 @@ __all__ = [
     "HDiffPatchError",
     # Core functions
     "diff",
+    "diff_lite",
     "apply",
+    "apply_lite",
     "recompress",
     # Configuration classes
     "BaseConfig",
@@ -48,7 +50,9 @@ from ._c_extension import (
     HDiffPatchError,
     # Core functions
     apply,
+    apply_lite,
     diff,
+    diff_lite,
     recompress,
 )
 from ._lzma_config import (
