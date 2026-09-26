@@ -42,9 +42,9 @@ def diff(
     big_cache_match : bool, default=False
         If True, builds an extra match cache over ``old_data`` (a bloom filter of
         roughly 0.5-1 byte per byte of ``old_data``) so candidate matches are
-        rejected without a suffix-array search. Matching gets faster (about
-        15-25% on 1-2 MB firmware images) and the output is byte-identical;
-        see the Performance docs for the trade-offs.
+        rejected without a suffix-array search. Diff creation gets faster and
+        the output is byte-identical; see the Performance docs for measurements
+        and trade-offs.
 
     Returns
     -------
@@ -159,9 +159,9 @@ def diff_lite(
     big_cache_match : bool, default=False
         If True, builds an extra match cache over ``old_data`` (a bloom filter of
         roughly 0.5-1 byte per byte of ``old_data``) so candidate matches are
-        rejected without a suffix-array search. Matching gets faster (about
-        15-25% on 1-2 MB firmware images) and the output is byte-identical;
-        see the Performance docs for the trade-offs.
+        rejected without a suffix-array search. Diff creation gets faster and
+        the output is byte-identical; see the Performance docs for measurements
+        and trade-offs.
 
     Returns
     -------
