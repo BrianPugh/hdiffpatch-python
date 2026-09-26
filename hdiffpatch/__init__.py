@@ -19,6 +19,7 @@ __all__ = [
     "apply",
     "apply_lite",
     "recompress",
+    "recompress_lite",
     # Configuration classes
     "BaseConfig",
     "BZip2Config",
@@ -54,6 +55,7 @@ from ._c_extension import (
     diff,
     diff_lite,
     recompress,
+    recompress_lite,
 )
 from ._lzma_config import (
     Lzma2Config,

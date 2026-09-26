@@ -25,6 +25,7 @@ LITE_COLUMNS = (
     "compression",
     "std diff (ms)",
     "lite diff (ms)",
+    "lite recompress (ms)",
     "std apply (ms)",
     "lite apply (ms)",
     "std size",
@@ -112,8 +113,10 @@ def lite_table(old: bytes, new: bytes) -> None:
 
     For each codec, times both formats' diff and apply and reports their output
     sizes plus the lite size as a percentage of the standard size (``lite/std``).
-    ``recompress`` has no lite equivalent, so it is omitted here.
+    ``lite recompress`` re-encodes a precomputed uncompressed lite diff with
+    :func:`hdiffpatch.recompress_lite`.
     """
+    lite_base = hdiffpatch.diff_lite(old, new, validate=False)
     rows: list[tuple[str, ...]] = []
     for compression in LITE_COMPRESSIONS:
         std_diff = hdiffpatch.diff(old, new, compression=compression, validate=False)
@@ -122,11 +125,16 @@ def lite_table(old: bytes, new: bytes) -> None:
         t_lite_diff = best_of(lambda c=compression: hdiffpatch.diff_lite(old, new, compression=c, validate=False))
         t_std_apply = best_of(lambda d=std_diff: hdiffpatch.apply(old, d))
         t_lite_apply = best_of(lambda d=lite_diff: hdiffpatch.apply_lite(old, d))
+        if compression == "none":
+            t_lite_recompress = "—"
+        else:
+            t_lite_recompress = f"{best_of(lambda c=compression: hdiffpatch.recompress_lite(lite_base, c)) * 1000:.1f}"
         rows.append(
             (
                 compression,
                 f"{t_std_diff * 1000:.1f}",
                 f"{t_lite_diff * 1000:.1f}",
+                t_lite_recompress,
                 f"{t_std_apply * 1000:.1f}",
                 f"{t_lite_apply * 1000:.1f}",
                 f"{len(std_diff):,}",
