@@ -16,7 +16,7 @@ def firmware():
     return old, new
 
 
-@pytest.mark.parametrize("compression", ["none", "lzma"])
+@pytest.mark.parametrize("compression", ["none", "zlib", "zstd", "lzma", "lzma2", "bzip2", "tamp"])
 def test_diff_big_cache_match_is_byte_identical(firmware, compression):
     old, new = firmware
     baseline = hdiffpatch.diff(old, new, compression)
@@ -24,7 +24,7 @@ def test_diff_big_cache_match_is_byte_identical(firmware, compression):
     assert cached == baseline
 
 
-@pytest.mark.parametrize("compression", ["none", "tamp"])
+@pytest.mark.parametrize("compression", ["none", "zlib", "lzma", "tamp"])
 def test_diff_lite_big_cache_match_is_byte_identical(firmware, compression):
     old, new = firmware
     baseline = hdiffpatch.diff_lite(old, new, compression=compression)
