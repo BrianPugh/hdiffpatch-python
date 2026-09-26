@@ -13,6 +13,22 @@ Performance
    diff_zstd = hdiffpatch.recompress(base, compression="zstd")
    diff_lzma = hdiffpatch.recompress(base, compression="lzma")
 
+* ``big_cache_match=True`` on :func:`hdiffpatch.diff` and :func:`hdiffpatch.diff_lite` speeds up the match search (see below).
+
+Big-cache matching
+------------------
+
+``big_cache_match`` maps to HDiffPatch's ``isUseBigCacheMatch``. Before matching, it hashes every 5-byte window of ``old_data`` into a bloom filter, and the matcher uses that filter to reject most candidate positions without a suffix-array search. It is a matching-stage option only, so it works the same for every compression type and has no effect on :func:`hdiffpatch.apply`, :func:`hdiffpatch.recompress`, or their lite counterparts.
+
+Trade-offs:
+
+* **Output:** byte-identical to ``big_cache_match=False``. Diff size and compression ratio don't change, and a diff made either way can be cached or compared against the other.
+* **Speed:** on 0.65-2 MB firmware images, the match search is about 25-30% faster (RPI_PICO pair below: :func:`hdiffpatch.diff` 26.8 → 19.6 ms, :func:`hdiffpatch.diff_lite` 26.3 → 18.9 ms; ESP32 images of 1.3-2 MB: 15-25%). Building the filter is one extra pass over ``old_data``; upstream warns that this build is slow, but it paid for itself at every size measured, down to 4 KB inputs.
+* **Memory:** the filter holds at least 4 bits per byte of ``old_data``, rounded up to a power of 2, so 0.5-1 byte per byte of ``old_data`` (a 2 MB image costs 1 MB). That sits on top of the suffix array the matcher always builds (4 bytes per byte of ``old_data`` below 2 GB, 8 above), and in the firmware measurements peak memory didn't grow measurably. For multi-GB inputs, budget up to ``len(old_data)`` extra bytes.
+* **Threads:** the filter is built on the calling thread, like the rest of the match search, with the GIL released.
+
+The default stays ``False`` to keep the upstream default and the existing memory profile for very large inputs. For firmware-sized inputs, turning it on is a free speedup.
+
 Benchmarks
 ----------
 
