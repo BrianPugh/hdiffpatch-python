@@ -79,10 +79,13 @@ cdef extern from "libHDiffPatch/HDiff/diff_types.h":
         pass
 
 cdef extern from "libHDiffPatch/HDiff/diff.h":
+    const int kMinSingleMatchScore_default
     void hdiff_create_compressed_diff "create_compressed_diff"(const unsigned char* newData, const unsigned char* newData_end,
                                                              const unsigned char* oldData, const unsigned char* oldData_end,
                                                              vector[unsigned char]& out_diff,
-                                                             const hdiff_TCompress* compressPlugin) except +hdiffpatch_translate_exception nogil
+                                                             const hdiff_TCompress* compressPlugin,
+                                                             int kMinSingleMatchScore,
+                                                             cpp_bool isUseBigCacheMatch) except +hdiffpatch_translate_exception nogil
 
 cdef extern from "libHDiffPatch/HPatch/patch_types.h":
     ctypedef struct hpatch_TDecompress:
@@ -211,12 +214,15 @@ cdef extern from "libHDiffPatch/HDiff/diff_for_hpatch_lite.h":
         const hdiff_TCompress* compress
         hpi_compressType       compress_type
 
-    # Trailing C++ default arguments (kMinSingleMatchScore, isUseBigCacheMatch,
-    # listener, threadNum) are omitted here so the library defaults apply.
+    const int kLiteMatchScore_default
+    # Trailing C++ default arguments (listener, threadNum) are omitted here so
+    # the library defaults apply.
     void c_create_lite_diff "create_lite_diff"(const unsigned char* newData, const unsigned char* newData_end,
                                                const unsigned char* oldData, const unsigned char* oldData_end,
                                                vector[unsigned char]& out_lite_diff,
-                                               const hdiffi_TCompress* compressPlugin) except +hdiffpatch_translate_exception nogil
+                                               const hdiffi_TCompress* compressPlugin,
+                                               int kMinSingleMatchScore,
+                                               cpp_bool isUseBigCacheMatch) except +hdiffpatch_translate_exception nogil
 
     cpp_bool c_check_lite_diff "check_lite_diff"(const unsigned char* newData, const unsigned char* newData_end,
                                                  const unsigned char* oldData, const unsigned char* oldData_end,
@@ -911,6 +917,7 @@ def diff(
     compression: Union[CompressionType, 'BaseConfig', None] = None,
     *,
     validate: bool = True,
+    big_cache_match: bool = False,
 ) -> bytes:
     """Create a binary diff between old and new data using HDiffPatch.
 
@@ -924,6 +931,12 @@ def diff(
         Compression algorithm to use
     validate : bool, default=True
         If True, validates that applying the diff to old_data produces new_data
+    big_cache_match : bool, default=False
+        If True, builds an extra match cache over ``old_data`` (a bloom filter of
+        roughly 0.5-1 byte per byte of ``old_data``) so candidate matches are
+        rejected without a suffix-array search. Diff creation gets faster and
+        the output is byte-identical; see the Performance docs for measurements
+        and trade-offs.
 
     Returns
     -------
@@ -951,11 +964,13 @@ def diff(
 
     # NULL plugin means no compression - HDIFF13& header format
     cdef const hdiff_TCompress* compress_plugin_ptr = <hdiff_TCompress*>0
+    cdef cpp_bool use_big_cache = big_cache_match
     if compression_plugin is not None:
         compress_plugin_ptr = compression_plugin.plugin
 
     with nogil:
-        hdiff_create_compressed_diff(new_ptr, new_end, old_ptr, old_end, diff_vector, compress_plugin_ptr)
+        hdiff_create_compressed_diff(new_ptr, new_end, old_ptr, old_end, diff_vector, compress_plugin_ptr,
+                                     kMinSingleMatchScore_default, use_big_cache)
 
     diff_size = diff_vector.size()
     if diff_size == 0:
@@ -1312,6 +1327,7 @@ def diff_lite(
     *,
     compression: Union[CompressionType, 'BaseConfig', None] = None,
     validate: bool = True,
+    big_cache_match: bool = False,
 ) -> bytes:
     """Create an HPatchLite "lite"-format binary diff between old and new data.
 
@@ -1334,6 +1350,12 @@ def diff_lite(
     validate : bool, default=True
         If True, validates that the lite diff reconstructs new_data from old_data
         using the vendored HPatchLite applier.
+    big_cache_match : bool, default=False
+        If True, builds an extra match cache over ``old_data`` (a bloom filter of
+        roughly 0.5-1 byte per byte of ``old_data``) so candidate matches are
+        rejected without a suffix-array search. Diff creation gets faster and
+        the output is byte-identical; see the Performance docs for measurements
+        and trade-offs.
 
     Returns
     -------
@@ -1362,6 +1384,7 @@ def diff_lite(
     cdef vector[unsigned char] diff_vector
     cdef hdiffi_TCompress lite_compress
     cdef size_t diff_size
+    cdef cpp_bool use_big_cache = big_cache_match
 
     # A NULL ``compress`` with ``hpi_compressType_no`` yields an uncompressed
     # lite diff; ``do_compress`` handles the NULL plugin internally.
@@ -1377,7 +1400,8 @@ def diff_lite(
         lite_compress.compress_type = _lite_compress_type_tag(codec_name)
 
     with nogil:
-        c_create_lite_diff(new_ptr, new_end, old_ptr, old_end, diff_vector, &lite_compress)
+        c_create_lite_diff(new_ptr, new_end, old_ptr, old_end, diff_vector, &lite_compress,
+                           kLiteMatchScore_default, use_big_cache)
 
     diff_size = diff_vector.size()
     if diff_size == 0:
