@@ -29,7 +29,67 @@ enum {
     kRecompressLiteOk = 0,           // success; out_diff holds the re-encoded diff
     kRecompressLiteOpenError = 1,    // header could not be opened (bad magic/format)
     kRecompressLiteDecompError = 2,  // compressed body but decompressor missing/failed
+    kRecompressLiteBodyError = 3,    // decoded body doesn't parse as covers producing newSize bytes
 };
+
+// Bounds-checked reader over a decoded lite body.
+struct TBodyWalker {
+    const unsigned char* cur;
+    const unsigned char* end;
+    bool ok;
+
+    unsigned char byte() {
+        if (cur == end) {
+            ok = false;
+            return 0;
+        }
+        return *cur++;
+    }
+    // hpatch_lite.c _cache_unpackUInt: big-endian 7-bit groups, high bit = more.
+    hpatch_StreamPos_t uint(hpatch_StreamPos_t v, bool more) {
+        while (more && ok) {
+            unsigned char b = byte();
+            v = (v << 7) | (b & 127);
+            more = (b >> 7) != 0;
+        }
+        return v;
+    }
+    void skip(hpatch_StreamPos_t n) {
+        if (n > (hpatch_StreamPos_t)(end - cur)) {
+            ok = false;
+            cur = end;
+        } else {
+            cur += n;
+        }
+    }
+};
+
+// Walk the covers the way hpatch_lite_patch() reads them, without old data:
+// the body must describe exactly newSize output bytes and end where they do.
+// A lite body carries no length of its own, so this is what catches a
+// truncated or padded uncompressed diff (a compressed one also fails in its
+// decompressor).
+static inline bool lite_body_is_well_formed(const std::vector<unsigned char>& body, hpi_pos_t newSize) {
+    TBodyWalker w = {body.data(), body.data() + body.size(), true};
+    hpatch_StreamPos_t coverCount = w.uint(0, true);
+    hpatch_StreamPos_t newPosBack = 0;
+    while (w.ok && coverCount--) {
+        hpatch_StreamPos_t length = w.uint(0, true);
+        unsigned char tag = w.byte();
+        w.uint(tag & 31, (tag & (1 << 5)) != 0);  // oldPos: not needed without old data
+        bool hasSubDiff = (tag >> 7) == 0;
+        hpatch_StreamPos_t newPos = w.uint(0, true) + newPosBack;
+        if (!w.ok || newPos < newPosBack || (length == 0 && coverCount != 0))
+            return false;
+        w.skip(newPos - newPosBack);  // literal new bytes before the cover
+        if (hasSubDiff)
+            w.skip(length);
+        newPosBack = newPos + length;
+        if (newPosBack < newPos)
+            return false;
+    }
+    return w.ok && w.cur == w.end && newPosBack == (hpatch_StreamPos_t)newSize;
+}
 
 struct TMemReader {
     const hpi_byte* cur;
@@ -107,6 +167,9 @@ static inline int recompress_lite_diff(const hpi_byte* lite_diff, const hpi_byte
         if (!ok)
             return kRecompressLiteDecompError;
     }
+
+    if (!lite_body_is_well_formed(raw, newSize))
+        return kRecompressLiteBodyError;
 
     // From here on this mirrors serialize_lite_diff() in HDiff/diff.cpp.
     std::vector<unsigned char> compressed;

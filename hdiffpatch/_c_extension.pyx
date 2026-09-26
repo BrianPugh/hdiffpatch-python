@@ -1490,8 +1490,9 @@ def recompress_lite(
     """Recompress an HPatchLite "lite"-format diff with a different compression algorithm.
 
     This is the lite-format counterpart of :func:`recompress`. Only the diff
-    body is re-encoded; the match search is not redone, so the output is
-    byte-identical to calling :func:`diff_lite` with ``compression`` directly.
+    body is re-encoded; the match search is not redone, so for a diff made by
+    :func:`diff_lite` the output is byte-identical to calling :func:`diff_lite`
+    with ``compression`` directly.
     A common pattern is to create the diff once uncompressed
     (``diff_lite(old, new)``) and then derive each compressed variant from it.
 
@@ -1550,6 +1551,8 @@ def recompress_lite(
 
     if rc == 1:
         raise HDiffPatchError("Invalid or corrupt lite diff header")
+    if rc == 3:
+        raise HDiffPatchError("Corrupt lite diff body: it does not describe the new data's size")
     if rc != 0:
         raise HDiffPatchError("Failed to decompress the lite diff body")
 

@@ -181,6 +181,21 @@ def test_recompress_lite_rejects_corrupt_body(source, large_repetitive_data):
         recompress_lite(lite[: len(lite) // 2], None)
 
 
+@pytest.mark.parametrize("cut", [1, 7, 100])
+def test_recompress_lite_rejects_truncated_uncompressed_body(cut, large_repetitive_data):
+    """An uncompressed body stores no length, so truncation is caught by walking its covers."""
+    lite = diff_lite(large_repetitive_data["old"], large_repetitive_data["new"])
+    with pytest.raises(HDiffPatchError, match="Corrupt lite diff body"):
+        recompress_lite(lite[:-cut], "lzma")
+
+
+def test_recompress_lite_rejects_padded_uncompressed_body(large_repetitive_data):
+    """Trailing bytes after the last cover are corruption too, as for the device applier."""
+    lite = diff_lite(large_repetitive_data["old"], large_repetitive_data["new"])
+    with pytest.raises(HDiffPatchError, match="Corrupt lite diff body"):
+        recompress_lite(lite + b"\x00", "lzma")
+
+
 def test_recompress_lite_huge_claimed_size():
     """A header claiming a ~4 GiB body is rejected without allocating the claimed size."""
     header = bytes([0x68, 0x49, 0x03, 0x40 | (4 << 3) | 1, 0x10]) + (0xFFFFFFF0).to_bytes(4, "little")

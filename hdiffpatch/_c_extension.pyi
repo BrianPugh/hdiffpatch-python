@@ -207,8 +207,9 @@ def recompress_lite(
     """Recompress an HPatchLite "lite"-format diff with a different compression algorithm.
 
     This is the lite-format counterpart of ``recompress``. Only the diff
-    body is re-encoded; the match search is not redone, so the output is
-    byte-identical to calling ``diff_lite`` with ``compression`` directly.
+    body is re-encoded; the match search is not redone, so for a diff made by
+    ``diff_lite`` the output is byte-identical to calling ``diff_lite`` with
+    ``compression`` directly.
     A common pattern is to create the diff once uncompressed
     (``diff_lite(old, new)``) and then derive each compressed variant from it.
 
