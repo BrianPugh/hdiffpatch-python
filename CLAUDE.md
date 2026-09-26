@@ -67,7 +67,7 @@ Linting/typing is configured in `pyproject.toml`: ruff (line length 120, numpy d
 ### Public API
 
 ```python
-diff(old_data: bytes, new_data: bytes, compression=None, *, validate=True) -> bytes
+diff(old_data: bytes, new_data: bytes, compression=None, *, validate=True, big_cache_match=False) -> bytes
 apply(old_data: bytes, diff_data: bytes) -> bytes      # auto-detects compression from diff header
 recompress(diff_data: bytes, compression=None) -> bytes  # re-encode an existing diff (incl. hdiffz output)
 ```
