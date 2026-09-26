@@ -199,3 +199,45 @@ def apply_lite(old_data: bytes, lite_diff: bytes) -> bytes:
         available, or the patch fails to reconstruct the data.
     """
     ...
+
+def recompress_lite(
+    lite_diff: bytes,
+    compression: CompressionType | BaseConfig | None,
+) -> bytes:
+    """Recompress an HPatchLite "lite"-format diff with a different compression algorithm.
+
+    This is the lite-format counterpart of ``recompress``. Only the diff
+    body is re-encoded; the match search is not redone, so the output is
+    byte-identical to calling ``diff_lite`` with ``compression`` directly.
+    A common pattern is to create the diff once uncompressed
+    (``diff_lite(old, new)``) and then derive each compressed variant from it.
+
+    The input's codec is auto-detected from the lite header. Inplace-variant
+    headers (version code 2, carrying ``extraSafeSize``) are preserved.
+
+    Parameters
+    ----------
+    lite_diff : bytes
+        A lite-format diff, compressed with any lite codec or uncompressed.
+    compression : CompressionType, BaseConfig, or None
+        Target compression, with the same accepted forms as ``diff_lite``:
+        ``"none"``, ``"zlib"``, ``"lzma"``, ``"tamp"`` or a matching
+        ``*Config``. ``None``/``"none"`` stores the body uncompressed. Passing
+        ``"zstd"``, ``"lzma2"``, or ``"bzip2"`` raises ``HDiffPatchError``.
+
+    Returns
+    -------
+    bytes
+        The recompressed lite-format diff.
+
+    Raises
+    ------
+    TypeError
+        If lite_diff is not bytes.
+    ValueError
+        If compression is not a recognized compression type.
+    HDiffPatchError
+        If the codec is not supported by HPatchLite, or if the lite diff's
+        header or body is malformed.
+    """
+    ...

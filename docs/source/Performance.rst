@@ -41,13 +41,21 @@ Standard vs. lite
 
 HPatchLite is HDiffPatch's tiny on-device applier format (``hpatch_lite_patch``), built for minimal device RAM/flash. :func:`hdiffpatch.diff_lite` and :func:`hdiffpatch.apply_lite` produce and consume it; it is **not** interchangeable with :func:`hdiffpatch.diff`/:func:`hdiffpatch.apply`. The trade-off is a slightly larger diff for a much smaller device-side footprint, which does not appear in host apply times. Only codecs HPatchLite can decode are supported (none/zlib/lzma/tamp).
 
-===========  =============  ==============  ==============  ===============  ========  =========  ========
-compression  std diff (ms)  lite diff (ms)  std apply (ms)  lite apply (ms)  std size  lite size  lite/std
-===========  =============  ==============  ==============  ===============  ========  =========  ========
-none                  25.3            25.6             0.4              0.2   161,041    637,195    395.7%
-zlib                  31.4           127.3             1.0              0.9    99,772    106,275    106.5%
-lzma                  36.5            63.4             3.3              3.2    92,647     96,859    104.5%
-tamp                  41.4            64.7             1.2              1.5   110,711    125,726    113.6%
-===========  =============  ==============  ==============  ===============  ========  =========  ========
+:func:`hdiffpatch.recompress_lite` is the lite counterpart of :func:`hdiffpatch.recompress`: it re-encodes an existing lite diff's body without redoing the match search, and its output is byte-identical to calling :func:`hdiffpatch.diff_lite` with the target codec. The *lite recompress* column times re-encoding a precomputed uncompressed lite diff, so to produce one lite diff under several codecs:
+
+.. code-block:: python
+
+   base = hdiffpatch.diff_lite(old, new)
+   lite_lzma = hdiffpatch.recompress_lite(base, "lzma")
+   lite_tamp = hdiffpatch.recompress_lite(base, "tamp")
+
+===========  =============  ==============  ====================  ==============  ===============  ========  =========  ========
+compression  std diff (ms)  lite diff (ms)  lite recompress (ms)  std apply (ms)  lite apply (ms)  std size  lite size  lite/std
+===========  =============  ==============  ====================  ==============  ===============  ========  =========  ========
+none                  25.8            25.9                     —             0.5              0.2   161,041    637,195    395.7%
+zlib                  33.0           128.7                 106.5             1.0              0.9    99,772    106,275    106.5%
+lzma                  40.8            72.6                  43.7             3.8              3.8    92,647     96,859    104.5%
+tamp                  45.3            68.2                  40.6             1.2              1.5   110,711    125,726    113.6%
+===========  =============  ==============  ====================  ==============  ===============  ========  =========  ========
 
 The ``none`` row is a ~4x outlier because the uncompressed lite encoding stores many literal new-data bytes; with a codec those literals compress and the gap collapses to ~5-14%, so lite should be used with compression.
