@@ -12,6 +12,7 @@ else:
     from ._tamp_config import TampConfig
     from ._bzip2_config import BZip2Config
     from ._zstd_config import ZStdConfig
+    from ._xz_config import XzConfig
 
 from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy
@@ -182,6 +183,9 @@ cdef extern from "compress_plugin_demo.h":
     extern const void* lzma2CompressPlugin
     extern const void* zstdCompressPlugin
     extern const void* bz2CompressPlugin
+    extern const void* _7zXZCompressPlugin
+    # Builds the CRC32 table the xz container checks; must run before xz is used.
+    int _init_CompressPlugin_7zXZ()
 
 cdef extern from "tamp_compress_plugin.cpp":
     extern const void* tampCompressPlugin
@@ -202,6 +206,7 @@ cdef extern from "decompress_plugin_demo.h":
     extern const void* lzma2DecompressPlugin
     extern const void* zstdDecompressPlugin
     extern const void* bz2DecompressPlugin
+    extern const void* _7zXZDecompressPlugin
 
 # HPatchLite "lite"-format diff creator. hpi_byte is a typedef for
 # ``unsigned char``, so ``vector[unsigned char]`` is the same C++ type as the
@@ -310,8 +315,16 @@ cdef extern from "compress_plugin_demo.h":
         int             dict_bits       # 10..(30 or 31)
         int             thread_num      # 1..(200?)
 
+# TCompressPlugin_7zXZ structure for custom xz configuration
+cdef extern from "compress_plugin_demo.h":
+    ctypedef struct TCompressPlugin_7zXZ:
+        hdiff_TCompress base
+        int             compress_level  # 0..9
+        unsigned int    dict_size
+        int             thread_num      # 1..64
+
 # Type aliases for compression parameters
-CompressionType = Literal["none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp"]
+CompressionType = Literal["none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp", "xz"]
 
 # Constants for convenience
 COMPRESSION_NONE = "none"
@@ -321,9 +334,10 @@ COMPRESSION_LZMA2 = "lzma2"
 COMPRESSION_ZSTD = "zstd"
 COMPRESSION_BZIP2 = "bzip2"
 COMPRESSION_TAMP = "tamp"
+COMPRESSION_XZ = "xz"
 
 
-_valid_compression_types = {"none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp"}
+_valid_compression_types = {"none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp", "xz"}
 
 # Codecs that have a compress-type byte in the "lite" diff header: every
 # upstream ``hpi_compressType`` value this build can encode, plus tamp's
@@ -341,6 +355,8 @@ _HPI_COMPRESS_TYPE_TAMP = 0xF0
 class HDiffPatchError(Exception):
     """Base exception for HDiffPatch operations."""
 
+
+_init_CompressPlugin_7zXZ()
 
 # Hand the exception type to the C++ translator so C++ throws from the core
 # surface as HDiffPatchError. The translator holds a borrowed reference; the
@@ -373,6 +389,8 @@ cdef const hdiff_TCompress* get_compress_plugin(str compression):
         return <const hdiff_TCompress*>&bz2CompressPlugin
     elif compression == COMPRESSION_TAMP:
         return <const hdiff_TCompress*>&tampCompressPlugin
+    elif compression == COMPRESSION_XZ:
+        return <const hdiff_TCompress*>&_7zXZCompressPlugin
     else:
         return NULL
 
@@ -402,6 +420,8 @@ cdef const hpatch_TDecompress* get_decompress_plugin(str compression):
         return <const hpatch_TDecompress*>&bz2DecompressPlugin
     elif compression == COMPRESSION_TAMP:
         return <const hpatch_TDecompress*>&tampDecompressPlugin
+    elif compression == COMPRESSION_XZ or compression == "7zXZ":
+        return <const hpatch_TDecompress*>&_7zXZDecompressPlugin
     else:
         return NULL
 
@@ -630,6 +650,37 @@ cdef TCompressPlugin_zstd* create_custom_zstd_plugin(zstd_config) except NULL:
 
     return custom_plugin
 
+cdef TCompressPlugin_7zXZ* create_custom_xz_plugin(xz_config) except NULL:
+    """Create a custom xz plugin instance with configuration.
+
+    Parameters
+    ----------
+    xz_config : XzConfig
+        The xz configuration object
+
+    Returns
+    -------
+    TCompressPlugin_7zXZ*
+        Pointer to configured xz plugin
+
+    Raises
+    ------
+    MemoryError
+        If memory allocation fails
+    """
+    cdef TCompressPlugin_7zXZ* custom_plugin = <TCompressPlugin_7zXZ*>malloc(sizeof(TCompressPlugin_7zXZ))
+    if custom_plugin == NULL:
+        raise MemoryError("Failed to allocate memory for custom xz plugin")
+
+    cdef const TCompressPlugin_7zXZ* base_plugin = <const TCompressPlugin_7zXZ*>&_7zXZCompressPlugin
+    custom_plugin[0] = base_plugin[0]
+
+    custom_plugin.compress_level = xz_config.level
+    custom_plugin.dict_size = <unsigned int>(1 << xz_config.window)
+    custom_plugin.thread_num = xz_config.threads
+
+    return custom_plugin
+
 cdef hpatch_StreamPos_t calculate_new_data_size(const unsigned char* diff_ptr, const unsigned char* diff_end) except -1:
     """Calculate the new data size from an uncompressed diff by examining covers.
 
@@ -835,6 +886,10 @@ cdef CompressionPlugin _resolve_compression_to_plugin(compression: Union[Compres
         custom_plugin_ptr = <void*>create_custom_zstd_plugin(compression)
         compress_plugin = <const hdiff_TCompress*>custom_plugin_ptr
         plugin_type = "zstd_config"
+    elif isinstance(compression, XzConfig):
+        custom_plugin_ptr = <void*>create_custom_xz_plugin(compression)
+        compress_plugin = <const hdiff_TCompress*>custom_plugin_ptr
+        plugin_type = "xz_config"
     else:
         # String-based compression - normalize and validate
         compression_str = str(compression).lower()
@@ -1223,6 +1278,8 @@ cdef str _lite_normalize_compression(compression):
         return COMPRESSION_ZSTD
     if isinstance(compression, BZip2Config):
         return COMPRESSION_BZIP2
+    if isinstance(compression, XzConfig):
+        raise HDiffPatchError(_lite_unsupported_message(COMPRESSION_XZ))
     if isinstance(compression, BaseConfig):
         raise HDiffPatchError(f"Unsupported compression config for lite diffs: {type(compression).__name__}")
 

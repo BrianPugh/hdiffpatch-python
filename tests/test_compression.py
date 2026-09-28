@@ -17,6 +17,7 @@ class TestCompressionTypes:
         assert hasattr(hdiffpatch, "COMPRESSION_ZSTD")
         assert hasattr(hdiffpatch, "COMPRESSION_BZIP2")
         assert hasattr(hdiffpatch, "COMPRESSION_TAMP")
+        assert hasattr(hdiffpatch, "COMPRESSION_XZ")
 
         assert hdiffpatch.COMPRESSION_NONE == "none"
         assert hdiffpatch.COMPRESSION_ZLIB == "zlib"
@@ -25,6 +26,7 @@ class TestCompressionTypes:
         assert hdiffpatch.COMPRESSION_ZSTD == "zstd"
         assert hdiffpatch.COMPRESSION_BZIP2 == "bzip2"
         assert hdiffpatch.COMPRESSION_TAMP == "tamp"
+        assert hdiffpatch.COMPRESSION_XZ == "xz"
 
 
 class TestUncompressedDiffs:

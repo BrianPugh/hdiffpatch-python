@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Literal
 if TYPE_CHECKING:
     from ._base_config import BaseConfig
 
-CompressionType = Literal["none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp"]
+CompressionType = Literal["none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp", "xz"]
 
 # Constants for convenience
 COMPRESSION_NONE: CompressionType = "none"
@@ -13,6 +13,7 @@ COMPRESSION_LZMA2: CompressionType = "lzma2"
 COMPRESSION_ZSTD: CompressionType = "zstd"
 COMPRESSION_BZIP2: CompressionType = "bzip2"
 COMPRESSION_TAMP: CompressionType = "tamp"
+COMPRESSION_XZ: CompressionType = "xz"
 
 class HDiffPatchError(Exception):
     """Base exception for HDiffPatch operations."""
