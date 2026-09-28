@@ -54,7 +54,7 @@ A patch is typically much smaller than the new data itself, making **hdiffpatch*
 
 ## Lite-format diffs for HPatchLite
 
-For extremely memory-constrained devices, `diff_lite` produces the compact "lite" format consumed by HDiffPatch's tiny on-device applier, [HPatchLite](https://github.com/sisong/HPatchLite) (`hpatch_lite_patch`). Only codecs the device can decode are accepted — `"none"`, `"zlib"`, `"lzma"`, and `"tamp"` (the last via a device-side decompressor plugin); `"zstd"`, `"lzma2"`, and `"bzip2"` are rejected with a clear error.
+For extremely memory-constrained devices, `diff_lite` produces the compact "lite" format consumed by HDiffPatch's tiny on-device applier, [HPatchLite](https://github.com/sisong/HPatchLite) (`hpatch_lite_patch`). Every codec with a compress-type byte in the lite header is accepted: `"none"`, `"zlib"`, `"lzma"`, `"lzma2"`, `"zstd"`, `"bzip2"`, and `"tamp"` (the last under the vendor-specific byte `0xF0`). `hpatch_lite_patch` does no decompression itself, so pick a codec whose decoder fits on your device; `"lzma"`, `"zlib"`, and `"tamp"` are the small ones.
 
 ```python
 import hdiffpatch

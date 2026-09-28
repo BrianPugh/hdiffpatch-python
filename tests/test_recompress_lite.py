@@ -6,10 +6,13 @@ import pytest
 
 import hdiffpatch
 from hdiffpatch import (
+    BZip2Config,
     HDiffPatchError,
+    Lzma2Config,
     LzmaConfig,
     TampConfig,
     ZlibConfig,
+    ZStdConfig,
     apply_lite,
     diff_lite,
     recompress_lite,
@@ -21,11 +24,17 @@ LITE_TARGETS = [
     hdiffpatch.COMPRESSION_NONE,
     hdiffpatch.COMPRESSION_ZLIB,
     hdiffpatch.COMPRESSION_LZMA,
+    hdiffpatch.COMPRESSION_LZMA2,
+    hdiffpatch.COMPRESSION_ZSTD,
+    hdiffpatch.COMPRESSION_BZIP2,
     hdiffpatch.COMPRESSION_TAMP,
     ZlibConfig(window=9),
     ZlibConfig.fast(),
     LzmaConfig(window=12),
     LzmaConfig(level=1, window=16),
+    Lzma2Config(window=16),
+    ZStdConfig(level=19, window=16),
+    BZip2Config.fast(),
     TampConfig(window=8),
     TampConfig(window=12, lazy_matching=False),
 ]
@@ -34,6 +43,9 @@ LITE_SOURCES = [
     hdiffpatch.COMPRESSION_NONE,
     hdiffpatch.COMPRESSION_ZLIB,
     hdiffpatch.COMPRESSION_LZMA,
+    hdiffpatch.COMPRESSION_LZMA2,
+    hdiffpatch.COMPRESSION_ZSTD,
+    hdiffpatch.COMPRESSION_BZIP2,
     hdiffpatch.COMPRESSION_TAMP,
 ]
 
@@ -123,25 +135,6 @@ def test_recompress_lite_preserves_inplace_header(target, large_repetitive_data)
     assert recompress_lite(result, None) == inplace
 
 
-@pytest.mark.parametrize(
-    "compression",
-    [
-        hdiffpatch.COMPRESSION_ZSTD,
-        hdiffpatch.COMPRESSION_LZMA2,
-        hdiffpatch.COMPRESSION_BZIP2,
-        hdiffpatch.ZStdConfig(),
-        hdiffpatch.Lzma2Config(),
-        hdiffpatch.BZip2Config(),
-    ],
-    ids=repr,
-)
-def test_recompress_lite_rejects_unsupported_codec(compression, simple_text_data):
-    """Codecs HPatchLite cannot decode are rejected, as in diff_lite."""
-    lite = diff_lite(simple_text_data["old"], simple_text_data["new"])
-    with pytest.raises(HDiffPatchError, match="not supported by HPatchLite"):
-        recompress_lite(lite, compression)
-
-
 def test_recompress_lite_invalid_compression_type(simple_text_data):
     """An unknown codec name raises ValueError."""
     lite = diff_lite(simple_text_data["old"], simple_text_data["new"])
@@ -173,7 +166,7 @@ def test_recompress_lite_rejects_garbage_header(garbage):
         recompress_lite(garbage, "zlib")
 
 
-@pytest.mark.parametrize("source", ["zlib", "lzma", "tamp"])
+@pytest.mark.parametrize("source", ["zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp"])
 def test_recompress_lite_rejects_corrupt_body(source, large_repetitive_data):
     """A truncated compressed body raises HDiffPatchError."""
     lite = diff_lite(large_repetitive_data["old"], large_repetitive_data["new"], compression=source)

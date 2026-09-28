@@ -9,34 +9,33 @@ import pytest
 import hdiffpatch
 from hdiffpatch import apply_lite, diff_lite
 
-# Codecs HPatchLite can decode. "tamp" round-trips through the vendored tamp
-# decompressor plugin. The on-device compress-type tag written into the lite
-# header is asserted directly in test_diff_lite_header_compression_tag; apply_lite
-# auto-detects the codec from that byte (there is no compression argument).
+# Every codec with a lite compress-type byte. The on-device compress-type tag
+# written into the lite header is asserted directly in
+# test_diff_lite_header_compression_tag; apply_lite auto-detects the codec from
+# that byte (there is no compression argument).
 LITE_SUPPORTED = [
     hdiffpatch.COMPRESSION_NONE,
     hdiffpatch.COMPRESSION_ZLIB,
     hdiffpatch.COMPRESSION_LZMA,
+    hdiffpatch.COMPRESSION_LZMA2,
+    hdiffpatch.COMPRESSION_ZSTD,
+    hdiffpatch.COMPRESSION_BZIP2,
     hdiffpatch.COMPRESSION_TAMP,
 ]
 
 # Expected compress-type byte in the lite header (byte index 2, after the
-# b"hI" magic) for each supported codec. Native codecs use their upstream
+# b"hI" magic) for each supported codec. Upstream codecs use their
 # hpi_compressType enum values; tamp uses the vendor-specific 0xF0 tag that the
 # device-side tamp decompressor plugin keys off.
 LITE_HEADER_TAG = {
     hdiffpatch.COMPRESSION_NONE: 0x00,
     hdiffpatch.COMPRESSION_ZLIB: 0x02,
     hdiffpatch.COMPRESSION_LZMA: 0x03,
+    hdiffpatch.COMPRESSION_LZMA2: 0x04,
+    hdiffpatch.COMPRESSION_ZSTD: 0x05,
+    hdiffpatch.COMPRESSION_BZIP2: 0x06,
     hdiffpatch.COMPRESSION_TAMP: 0xF0,
 }
-
-# Valid HDiffPatch codecs that HPatchLite cannot decode and must be rejected.
-LITE_UNSUPPORTED = [
-    hdiffpatch.COMPRESSION_ZSTD,
-    hdiffpatch.COMPRESSION_LZMA2,
-    hdiffpatch.COMPRESSION_BZIP2,
-]
 
 
 def test_diff_lite_basic(simple_text_data):
@@ -81,6 +80,9 @@ def test_diff_lite_round_trip_binary(compression, binary_data):
     [
         hdiffpatch.ZlibConfig(),
         hdiffpatch.LzmaConfig(),
+        hdiffpatch.Lzma2Config(),
+        hdiffpatch.ZStdConfig(),
+        hdiffpatch.BZip2Config(),
         hdiffpatch.TampConfig(window=10),
     ],
 )
@@ -126,31 +128,14 @@ def test_diff_lite_validate_default_catches_round_trip(simple_text_data):
     assert apply_lite(old_data, lite_unvalidated) == new_data
 
 
-@pytest.mark.parametrize("compression", LITE_UNSUPPORTED)
-def test_diff_lite_rejects_unsupported_codec(compression, simple_text_data):
-    """Codecs HPatchLite cannot decode are rejected with a clear error."""
-    old_data = simple_text_data["old"]
-    new_data = simple_text_data["new"]
+def test_diff_lite_rejects_unknown_config(simple_text_data):
+    """A ``BaseConfig`` subclass with no codec behind it is rejected with a clear error."""
 
-    with pytest.raises(hdiffpatch.HDiffPatchError, match="not supported by HPatchLite"):
-        diff_lite(old_data, new_data, compression=compression)
+    class UnknownConfig(hdiffpatch.BaseConfig):
+        pass
 
-
-@pytest.mark.parametrize(
-    "config",
-    [
-        hdiffpatch.ZStdConfig(),
-        hdiffpatch.Lzma2Config(),
-        hdiffpatch.BZip2Config(),
-    ],
-)
-def test_diff_lite_rejects_unsupported_config(config, simple_text_data):
-    """Unsupported ``*Config`` objects are rejected with a clear error."""
-    old_data = simple_text_data["old"]
-    new_data = simple_text_data["new"]
-
-    with pytest.raises(hdiffpatch.HDiffPatchError, match="not supported by HPatchLite"):
-        diff_lite(old_data, new_data, compression=config)
+    with pytest.raises(hdiffpatch.HDiffPatchError, match="Unsupported compression config"):
+        diff_lite(simple_text_data["old"], simple_text_data["new"], compression=UnknownConfig())
 
 
 def test_diff_lite_invalid_compression_type(simple_text_data):

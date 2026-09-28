@@ -318,11 +318,11 @@ COMPRESSION_TAMP = "tamp"
 
 _valid_compression_types = {"none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp"}
 
-# Codecs whose output HPatchLite's on-device applier (``hpatch_lite_patch``) can
-# consume in the "lite" diff format. zlib and lzma decode natively; tamp decodes
-# only through a device-side plugin; zstd/lzma2/bzip2 are intentionally excluded
-# because no HPatchLite build decodes them.
-_lite_supported_compression_types = {"none", "zlib", "lzma", "tamp"}
+# Codecs that have a compress-type byte in the "lite" diff header: every
+# upstream ``hpi_compressType`` value this build can encode, plus tamp's
+# vendor-specific byte. ``hpatch_lite_patch`` does no decompression itself, so
+# which of these a device can apply depends on the decoders it links.
+_lite_supported_compression_types = {"none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp"}
 
 # tamp has no upstream ``hpi_compressType`` enum value. This vendor-specific tag
 # is written into the lite-diff header and must match whatever the device-side
@@ -1222,10 +1222,10 @@ def recompress(
 
 
 def _lite_unsupported_message(codec_name: str) -> str:
-    """Build the error message for a codec that HPatchLite cannot decode."""
+    """Build the error message for a codec that has no lite compress-type byte."""
     return (
         f"Compression type {codec_name!r} is not supported by HPatchLite lite diffs "
-        f"(the on-device applier cannot decode it). Supported types: "
+        f"(the lite header has no compress-type byte for it). Supported types: "
         f"{', '.join(sorted(_lite_supported_compression_types))}."
     )
 
@@ -1238,22 +1238,16 @@ cdef hpi_compressType _lite_compress_type_tag(str codec_name) except *:
         return hpi_compressType_zlib
     elif codec_name == COMPRESSION_LZMA:
         return hpi_compressType_lzma
+    elif codec_name == COMPRESSION_LZMA2:
+        return hpi_compressType_lzma2
+    elif codec_name == COMPRESSION_ZSTD:
+        return hpi_compressType_zstd
+    elif codec_name == COMPRESSION_BZIP2:
+        return hpi_compressType_bzip2
     elif codec_name == COMPRESSION_TAMP:
         return <hpi_compressType><int>_HPI_COMPRESS_TYPE_TAMP
     else:
         raise HDiffPatchError(f"No lite compress-type tag for codec: {codec_name}")
-
-
-cdef const hpatch_TDecompress* _lite_decompress_plugin(str codec_name):
-    """Return the decompressor matching a lite codec name (NULL for ``none``)."""
-    if codec_name == COMPRESSION_ZLIB:
-        return <const hpatch_TDecompress*>&zlibDecompressPlugin
-    elif codec_name == COMPRESSION_LZMA:
-        return <const hpatch_TDecompress*>&lzmaDecompressPlugin
-    elif codec_name == COMPRESSION_TAMP:
-        return <const hpatch_TDecompress*>&tampDecompressPlugin
-    else:
-        return NULL
 
 
 cdef str _lite_normalize_compression(compression):
@@ -1267,30 +1261,29 @@ cdef str _lite_normalize_compression(compression):
     Returns
     -------
     str
-        One of ``"none"``, ``"zlib"``, ``"lzma"``, ``"tamp"``.
+        A codec name in ``_lite_supported_compression_types``.
 
     Raises
     ------
     ValueError
         If the compression type is not a valid HDiffPatch codec at all.
     HDiffPatchError
-        If the codec is a valid HDiffPatch codec but cannot be decoded by
-        HPatchLite (``"zstd"``, ``"lzma2"``, ``"bzip2"``).
+        If the codec is a valid HDiffPatch codec with no lite compress-type byte.
     """
     if compression is None:
         return COMPRESSION_NONE
     if isinstance(compression, ZlibConfig):
         return COMPRESSION_ZLIB
     if isinstance(compression, Lzma2Config):
-        raise HDiffPatchError(_lite_unsupported_message(COMPRESSION_LZMA2))
+        return COMPRESSION_LZMA2
     if isinstance(compression, LzmaConfig):
         return COMPRESSION_LZMA
     if isinstance(compression, TampConfig):
         return COMPRESSION_TAMP
     if isinstance(compression, ZStdConfig):
-        raise HDiffPatchError(_lite_unsupported_message(COMPRESSION_ZSTD))
+        return COMPRESSION_ZSTD
     if isinstance(compression, BZip2Config):
-        raise HDiffPatchError(_lite_unsupported_message(COMPRESSION_BZIP2))
+        return COMPRESSION_BZIP2
     if isinstance(compression, BaseConfig):
         raise HDiffPatchError(f"Unsupported compression config for lite diffs: {type(compression).__name__}")
 
@@ -1313,7 +1306,7 @@ cdef cpp_bool _run_check_lite_diff(bytes old_data, bytes new_data, bytes lite_di
     cdef const unsigned char* new_end = new_ptr + PyBytes_Size(new_data)
     cdef const unsigned char* diff_ptr = <const unsigned char*>PyBytes_AsString(lite_diff)
     cdef const unsigned char* diff_end = diff_ptr + PyBytes_Size(lite_diff)
-    cdef hpatch_TDecompress* decompress_plugin = <hpatch_TDecompress*>_lite_decompress_plugin(codec_name)
+    cdef hpatch_TDecompress* decompress_plugin = <hpatch_TDecompress*>get_decompress_plugin(codec_name)
     cdef cpp_bool ok
 
     with nogil:
@@ -1343,10 +1336,11 @@ def diff_lite(
     new_data : bytes
         The new data to diff against.
     compression : CompressionType, BaseConfig, or None, default=None
-        Compression algorithm to use. Only codecs decodable by HPatchLite are
-        accepted: ``"none"``, ``"zlib"``, ``"lzma"``, and ``"tamp"`` (the latter
-        via a device-side decompressor plugin). Passing ``"zstd"``, ``"lzma2"``,
-        or ``"bzip2"`` (as a name or ``*Config``) raises ``HDiffPatchError``.
+        Compression algorithm to use. Any codec with a compress-type byte in
+        the lite header is accepted: ``"none"``, ``"zlib"``, ``"lzma"``,
+        ``"lzma2"``, ``"zstd"``, ``"bzip2"``, and ``"tamp"`` (the latter under
+        the vendor-specific byte ``0xF0``). A device can only apply the codecs
+        whose decoders it links.
     validate : bool, default=True
         If True, validates that the lite diff reconstructs new_data from old_data
         using the vendored HPatchLite applier.
@@ -1369,7 +1363,7 @@ def diff_lite(
     ValueError
         If compression is not a recognized compression type.
     HDiffPatchError
-        If the codec is not supported by HPatchLite, if diff creation fails, or
+        If the codec has no lite compress-type byte, if diff creation fails, or
         if roundtrip validation fails.
     """
     if not isinstance(old_data, bytes) or not isinstance(new_data, bytes):
@@ -1436,6 +1430,12 @@ cdef hpatch_TDecompress* _lite_header_decompress_plugin(hpi_compressType compres
         return <hpatch_TDecompress*>&zlibDecompressPlugin
     elif ct == <int>hpi_compressType_lzma:
         return <hpatch_TDecompress*>&lzmaDecompressPlugin
+    elif ct == <int>hpi_compressType_lzma2:
+        return <hpatch_TDecompress*>&lzma2DecompressPlugin
+    elif ct == <int>hpi_compressType_zstd:
+        return <hpatch_TDecompress*>&zstdDecompressPlugin
+    elif ct == <int>hpi_compressType_bzip2:
+        return <hpatch_TDecompress*>&bz2DecompressPlugin
     elif ct == _HPI_COMPRESS_TYPE_TAMP:
         return <hpatch_TDecompress*>&tampDecompressPlugin
     raise HDiffPatchError(
@@ -1455,9 +1455,8 @@ def apply_lite(old_data: bytes, lite_diff: bytes) -> bytes:
 
     The compression codec is auto-detected from the lite header (which is
     self-describing, exactly like the standard patch format), so there is no
-    ``compression`` argument. Native codecs (``none``/``zlib``/``lzma``) use
-    their upstream ``hpi_compressType`` values; the vendor-specific byte
-    ``0xF0`` selects the tamp decompressor.
+    ``compression`` argument. Upstream codecs use their ``hpi_compressType``
+    values; the vendor-specific byte ``0xF0`` selects the tamp decompressor.
 
     Parameters
     ----------
@@ -1529,9 +1528,8 @@ def recompress_lite(
         A lite-format diff, compressed with any lite codec or uncompressed.
     compression : CompressionType, BaseConfig, or None
         Target compression, with the same accepted forms as :func:`diff_lite`:
-        ``"none"``, ``"zlib"``, ``"lzma"``, ``"tamp"`` or a matching
-        ``*Config``. ``None``/``"none"`` stores the body uncompressed. Passing
-        ``"zstd"``, ``"lzma2"``, or ``"bzip2"`` raises ``HDiffPatchError``.
+        any lite codec name or a matching ``*Config``. ``None``/``"none"``
+        stores the body uncompressed.
 
     Returns
     -------
@@ -1545,7 +1543,7 @@ def recompress_lite(
     ValueError
         If compression is not a recognized compression type.
     HDiffPatchError
-        If the codec is not supported by HPatchLite, or if the lite diff's
+        If the codec has no lite compress-type byte, or if the lite diff's
         header or body is malformed.
     """
     if not isinstance(lite_diff, bytes):
