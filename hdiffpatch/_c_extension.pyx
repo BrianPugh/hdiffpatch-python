@@ -158,7 +158,7 @@ cdef extern from "libHDiffPatch/HDiff/diff.h":
                                hpatch_TDecompress* decompressPlugin,
                                const hpatch_TStreamOutput* out_diff,
                                const hdiff_TCompress* compressPlugin,
-                               hpatch_StreamPos_t out_diff_curPos) except +hdiffpatch_translate_exception
+                               hpatch_StreamPos_t out_diff_curPos) except +hdiffpatch_translate_exception nogil
 
     hpatch_StreamPos_t resave_single_compressed_diff(
         const hpatch_TStreamInput* in_diff,
@@ -167,7 +167,14 @@ cdef extern from "libHDiffPatch/HDiff/diff.h":
         const hdiff_TCompress* compressPlugin,
         const hpatch_singleCompressedDiffInfo* diffInfo,
         hpatch_StreamPos_t in_diff_curPos,
-        hpatch_StreamPos_t out_diff_curPos) except +hdiffpatch_translate_exception
+        hpatch_StreamPos_t out_diff_curPos) except +hdiffpatch_translate_exception nogil
+
+# Plain C++ vector-backed output stream (the one create_compressed_diff uses).
+# Multithreaded encoders (lzma2, xz) call its write() from worker threads, so it
+# must not touch Python objects.
+cdef extern from "libHDiffPatch/HDiff/private_diff/limit_mem_diff/stream_serialize.h" namespace "hdiff_private":
+    cppclass TVectorAsStreamOutput:
+        TVectorAsStreamOutput(vector[unsigned char]& dst)
 
 cdef extern from "compress_plugin_demo.h":
     extern const void* zlibCompressPlugin
@@ -774,70 +781,6 @@ cdef class CompressionPlugin:
             free(self.custom_plugin_ptr)
 
 
-cdef class VectorOutputStream:
-    """Container for vector-based output stream for HDiffPatch operations."""
-    cdef hpatch_TStreamOutput stream
-    cdef vector[unsigned char]* output_vector
-    cdef hpatch_StreamPos_t current_size
-
-    def __cinit__(self):
-        self.output_vector = new vector[unsigned char]()
-        self.current_size = 0
-        self.stream.streamImport = <void*>self
-        self.stream.streamSize = 0
-        self.stream.write = _vector_output_write
-
-    def __dealloc__(self):
-        """Clean up vector memory."""
-        if self.output_vector != NULL:
-            del self.output_vector
-
-    cdef const hpatch_TStreamOutput* get_stream(self):
-        """Get pointer to the stream interface (C-only method)."""
-        return &self.stream
-
-    cdef vector[unsigned char]* get_vector(self):
-        """Get pointer to the output vector (C-only method)."""
-        return self.output_vector
-
-    cdef hpatch_StreamPos_t get_size(self):
-        """Get the current stream size (C-only method)."""
-        return self.current_size
-
-
-cdef hpatch_BOOL _vector_output_write(const hpatch_TStreamOutput* stream,
-                                     hpatch_StreamPos_t writeToPos,
-                                     const unsigned char* data,
-                                     const unsigned char* data_end) noexcept:
-    """C callback function for writing to vector output stream."""
-    cdef VectorOutputStream self_obj = <VectorOutputStream>stream.streamImport
-    cdef size_t data_size = data_end - data
-    cdef hpatch_StreamPos_t required_size_64 = writeToPos + data_size
-    # Stream positions are 64-bit; reject writes beyond what size_t can
-    # address (only reachable on 32-bit builds).
-    if required_size_64 != <hpatch_StreamPos_t><size_t>required_size_64:
-        return 0  # hpatch_FALSE
-    cdef size_t required_size = <size_t>required_size_64
-
-    try:
-        # Resize vector if necessary
-        if self_obj.output_vector.size() < required_size:
-            self_obj.output_vector.resize(required_size)
-
-        # Copy data to vector
-        if data_size > 0:
-            memcpy(&(self_obj.output_vector.at(writeToPos)), data, data_size)
-
-        # Update current size
-        if writeToPos + data_size > self_obj.current_size:
-            self_obj.current_size = writeToPos + data_size
-            self_obj.stream.streamSize = self_obj.current_size
-
-        return 1  # hpatch_TRUE
-    except:
-        return 0  # hpatch_FALSE
-
-
 cdef CompressionPlugin _resolve_compression_to_plugin(compression: Union[CompressionType, None, 'BaseConfig']):
     """Resolve compression parameter to plugin object.
 
@@ -1180,45 +1123,41 @@ def recompress(
 
     # Resolve output compression plugin
     compression_plugin = _resolve_compression_to_plugin(compression)
+    cdef const hdiff_TCompress* compress_plugin_ptr = NULL
+    if compression_plugin is not None:
+        compress_plugin_ptr = compression_plugin.plugin
 
-    # Create output stream
-    cdef VectorOutputStream output_stream = VectorOutputStream()
-    cdef hpatch_StreamPos_t result_size
-    cdef vector[unsigned char]* result_vector
+    cdef vector[unsigned char] out_vector
+    cdef TVectorAsStreamOutput* out_stream = new TVectorAsStreamOutput(out_vector)
+    cdef const hpatch_TStreamOutput* out_stream_ptr = <const hpatch_TStreamOutput*>out_stream
 
     try:
-        # Call appropriate resave function based on detected format
-        if is_single_diff:
-            resave_single_compressed_diff(
-                &input_stream,
-                decompress_plugin,
-                output_stream.get_stream(),
-                compression_plugin.plugin if compression_plugin is not None else NULL,
-                &singleDiffInfo,
-                0,  # in_diff_curPos
-                0   # out_diff_curPos
-            )
-        else:
-            resave_compressed_diff(
-                &input_stream,
-                decompress_plugin,
-                output_stream.get_stream(),
-                compression_plugin.plugin if compression_plugin is not None else NULL,
-                0   # out_diff_curPos
-            )
+        with nogil:
+            if is_single_diff:
+                resave_single_compressed_diff(
+                    &input_stream,
+                    decompress_plugin,
+                    out_stream_ptr,
+                    compress_plugin_ptr,
+                    &singleDiffInfo,
+                    0,  # in_diff_curPos
+                    0   # out_diff_curPos
+                )
+            else:
+                resave_compressed_diff(
+                    &input_stream,
+                    decompress_plugin,
+                    out_stream_ptr,
+                    compress_plugin_ptr,
+                    0   # out_diff_curPos
+                )
+    finally:
+        del out_stream
 
-        # Extract result from output vector
-        result_size = output_stream.get_size()
-        if result_size == 0:
-            raise HDiffPatchError("Recompression produced empty result")
+    if out_vector.size() == 0:
+        raise HDiffPatchError("Recompression produced empty result")
 
-        result_vector = output_stream.get_vector()
-        return PyBytes_FromStringAndSize(<char*>result_vector.data(), result_size)
-
-    except HDiffPatchError:
-        raise
-    except Exception as e:
-        raise HDiffPatchError(f"Recompression failed: {str(e)}") from e
+    return PyBytes_FromStringAndSize(<char*>out_vector.data(), out_vector.size())
 
 
 def _lite_unsupported_message(codec_name: str) -> str:
