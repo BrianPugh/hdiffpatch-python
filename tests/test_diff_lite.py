@@ -22,6 +22,8 @@ LITE_SUPPORTED = [
     hdiffpatch.COMPRESSION_ZSTD,
     hdiffpatch.COMPRESSION_BZIP2,
     hdiffpatch.COMPRESSION_TAMP,
+    hdiffpatch.COMPRESSION_LZ4,
+    hdiffpatch.COMPRESSION_LZ4HC,
 ]
 
 # Expected compress-type byte in the lite header (byte index 2, after the
@@ -36,6 +38,8 @@ LITE_HEADER_TAG = {
     hdiffpatch.COMPRESSION_ZSTD: 0x05,
     hdiffpatch.COMPRESSION_BZIP2: 0x06,
     hdiffpatch.COMPRESSION_TAMP: 0xF0,
+    hdiffpatch.COMPRESSION_LZ4: 0x07,
+    hdiffpatch.COMPRESSION_LZ4HC: 0x07,  # LZ4HC output is a plain LZ4 stream
 }
 
 # Valid HDiffPatch codecs with no lite compress-type byte, which must be rejected.
@@ -98,6 +102,8 @@ def test_diff_lite_round_trip_binary(compression, binary_data):
         hdiffpatch.ZStdConfig(),
         hdiffpatch.BZip2Config(),
         hdiffpatch.TampConfig(window=10),
+        hdiffpatch.Lz4Config(),
+        hdiffpatch.Lz4HCConfig(),
     ],
 )
 def test_diff_lite_config_objects(config, highly_compressible_data):

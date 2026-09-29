@@ -3,9 +3,9 @@ from typing import TYPE_CHECKING, Literal
 if TYPE_CHECKING:
     from ._base_config import BaseConfig
 
-CompressionType = Literal["none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp", "xz"]
+CompressionType = Literal["none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp", "xz", "lz4", "lz4hc"]
 # The subset of CompressionType that has a lite compress-type byte.
-LiteCompressionType = Literal["none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp"]
+LiteCompressionType = Literal["none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp", "lz4", "lz4hc"]
 
 # Constants for convenience
 COMPRESSION_NONE: CompressionType = "none"
@@ -16,6 +16,8 @@ COMPRESSION_ZSTD: CompressionType = "zstd"
 COMPRESSION_BZIP2: CompressionType = "bzip2"
 COMPRESSION_TAMP: CompressionType = "tamp"
 COMPRESSION_XZ: CompressionType = "xz"
+COMPRESSION_LZ4: CompressionType = "lz4"
+COMPRESSION_LZ4HC: CompressionType = "lz4hc"
 
 class HDiffPatchError(Exception):
     """Base exception for HDiffPatch operations."""
@@ -154,9 +156,9 @@ def diff_lite(
     compression : LiteCompressionType, BaseConfig, or None, default=None
         Compression algorithm to use. Any codec with a compress-type byte in
         the lite header is accepted: ``"none"``, ``"zlib"``, ``"lzma"``,
-        ``"lzma2"``, ``"zstd"``, ``"bzip2"``, and ``"tamp"`` (the latter under
-        the vendor-specific byte ``0xF0``). A device can only apply the codecs
-        whose decoders it links.
+        ``"lzma2"``, ``"zstd"``, ``"bzip2"``, ``"lz4"``, ``"lz4hc"``, and
+        ``"tamp"`` (the latter under the vendor-specific byte ``0xF0``). A
+        device can only apply the codecs whose decoders it links.
     validate : bool, default=True
         If True, validates that the lite diff reconstructs new_data from old_data
         using the vendored HPatchLite applier.
