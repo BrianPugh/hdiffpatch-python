@@ -7,6 +7,7 @@ __all__ = [
     "COMPRESSION_BZIP2",
     "COMPRESSION_LZ4",
     "COMPRESSION_LZ4HC",
+    "COMPRESSION_LZHAM",
     "COMPRESSION_LZMA",
     "COMPRESSION_LZMA2",
     "COMPRESSION_NONE",
@@ -34,6 +35,7 @@ __all__ = [
     "ZlibStrategy",
     "Lz4Config",
     "Lz4HCConfig",
+    "LzhamConfig",
     "LzmaConfig",
     "Lzma2Config",
     "TampConfig",
@@ -57,6 +59,7 @@ from ._c_extension import (
     COMPRESSION_BZIP2,
     COMPRESSION_LZ4,
     COMPRESSION_LZ4HC,
+    COMPRESSION_LZHAM,
     COMPRESSION_LZMA,
     COMPRESSION_LZMA2,
     COMPRESSION_NONE,
@@ -80,6 +83,9 @@ from ._c_extension import (
 from ._lz4_config import (
     Lz4Config,
     Lz4HCConfig,
+)
+from ._lzham_config import (
+    LzhamConfig,
 )
 from ._lzma_config import (
     Lzma2Config,

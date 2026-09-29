@@ -69,6 +69,7 @@ def compression_types():
         hdiffpatch.COMPRESSION_LZ4HC,
         hdiffpatch.COMPRESSION_TUZ,
         hdiffpatch.COMPRESSION_BROTLI,
+        hdiffpatch.COMPRESSION_LZHAM,
     ]
 
 
@@ -88,6 +89,7 @@ def all_compression_types():
         hdiffpatch.COMPRESSION_LZ4HC,
         hdiffpatch.COMPRESSION_TUZ,
         hdiffpatch.COMPRESSION_BROTLI,
+        hdiffpatch.COMPRESSION_LZHAM,
     ]
 
 

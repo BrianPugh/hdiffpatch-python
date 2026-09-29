@@ -69,6 +69,7 @@ def get_sources():
     lz4_path = base_path / ".." / "lz4" / "lib"
     tuz_path = base_path / ".." / "tinyuz"
     brotli_path = base_path / ".." / "brotli" / "c"
+    lzham_path = base_path / ".." / "lzham_codec"
 
     sources = []
 
@@ -152,6 +153,10 @@ def get_sources():
     # BROTLI
     for part in ["common", "enc", "dec"]:
         sources.extend((brotli_path / part).glob("*.c"))
+    # LZHAM (its threading backend is picked per platform, like its CMakeLists.txt)
+    lzham_skip = "lzham_pthreads_threading.cpp" if platform.system() == "Windows" else "lzham_win32_threading.cpp"
+    for part in ["lzhamcomp", "lzhamdecomp", "lzhamlib"]:
+        sources.extend(src for src in (lzham_path / part).glob("*.cpp") if src.name != lzham_skip)
 
     # LIBDEFLATE
     sources.extend(
@@ -178,6 +183,7 @@ def get_include_dirs():
     lz4_path = base_path / ".." / "lz4" / "lib"
     tuz_path = base_path / ".." / "tinyuz"
     brotli_path = base_path / ".." / "brotli" / "c"
+    lzham_path = base_path / ".." / "lzham_codec"
 
     return [
         "hdiffpatch",
@@ -200,6 +206,9 @@ def get_include_dirs():
         str(tuz_path / "compress"),
         str(tuz_path / "decompress"),
         str(brotli_path / "include"),
+        str(lzham_path / "include"),
+        str(lzham_path / "lzhamcomp"),
+        str(lzham_path / "lzhamdecomp"),
     ]
 
 
@@ -231,6 +240,7 @@ def get_compile_args():
         "-DLZ4_DISABLE_DEPRECATE_WARNINGS",  # upstream plugin calls LZ4_resetStreamHC
         "-D_CompressPlugin_tuz",
         "-D_CompressPlugin_brotli",
+        "-D_CompressPlugin_lzham",
         "-DTAMP_LAZY_MATCHING=1",
     ]
 

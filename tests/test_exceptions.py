@@ -35,6 +35,7 @@ def test_apply_error_not_double_wrapped():
 def test_invalid_compression_error_message_sorted():
     """Test that the invalid-compression error lists options in stable sorted order."""
     with pytest.raises(
-        ValueError, match="Valid options: brotli, bzip2, lz4, lz4hc, lzma, lzma2, none, tamp, tuz, xz, zlib, zstd"
+        ValueError,
+        match="Valid options: brotli, bzip2, lz4, lz4hc, lzham, lzma, lzma2, none, tamp, tuz, xz, zlib, zstd",
     ):
         hdiffpatch.diff(b"old", b"new", compression="bogus")  # pyright: ignore[reportArgumentType]
