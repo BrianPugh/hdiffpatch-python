@@ -67,6 +67,7 @@ def get_sources():
     ldef_path = base_path / ".." / "libdeflate"
     tamp_path = base_path / ".." / "tamp" / "tamp" / "_c_src"
     lz4_path = base_path / ".." / "lz4" / "lib"
+    tuz_path = base_path / ".." / "tinyuz"
 
     sources = []
 
@@ -144,6 +145,9 @@ def get_sources():
 
     # LZ4
     sources.extend([lz4_path / "lz4.c", lz4_path / "lz4hc.c"])
+    # TINYUZ
+    sources.extend((tuz_path / "compress").rglob("*.cpp"))
+    sources.append(tuz_path / "decompress" / "tuz_dec.c")
 
     # LIBDEFLATE
     sources.extend(
@@ -168,6 +172,7 @@ def get_include_dirs():
     ldef_path = base_path / ".." / "libdeflate"
     tamp_path = base_path / ".." / "tamp" / "tamp" / "_c_src"
     lz4_path = base_path / ".." / "lz4" / "lib"
+    tuz_path = base_path / ".." / "tinyuz"
 
     return [
         "hdiffpatch",
@@ -187,6 +192,8 @@ def get_include_dirs():
         str(zlib_path),
         str(ldef_path),
         str(lz4_path),
+        str(tuz_path / "compress"),
+        str(tuz_path / "decompress"),
     ]
 
 
@@ -216,6 +223,7 @@ def get_compile_args():
         "-D_CompressPlugin_lz4",
         "-D_CompressPlugin_lz4hc",
         "-DLZ4_DISABLE_DEPRECATE_WARNINGS",  # upstream plugin calls LZ4_resetStreamHC
+        "-D_CompressPlugin_tuz",
         "-DTAMP_LAZY_MATCHING=1",
     ]
 

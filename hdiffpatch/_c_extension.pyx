@@ -14,6 +14,7 @@ else:
     from ._zstd_config import ZStdConfig
     from ._xz_config import XzConfig
     from ._lz4_config import Lz4Config, Lz4HCConfig
+    from ._tuz_config import TuzConfig
 
 from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy
@@ -189,6 +190,7 @@ cdef extern from "compress_plugin_demo.h":
     int _init_CompressPlugin_7zXZ()
     extern const void* lz4CompressPlugin
     extern const void* lz4hcCompressPlugin
+    extern const void* tuzCompressPlugin
 
 cdef extern from "tamp_compress_plugin.cpp":
     extern const void* tampCompressPlugin
@@ -211,6 +213,7 @@ cdef extern from "decompress_plugin_demo.h":
     extern const void* bz2DecompressPlugin
     extern const void* _7zXZDecompressPlugin
     extern const void* lz4DecompressPlugin
+    extern const void* tuzDecompressPlugin
 
 # HPatchLite "lite"-format diff creator. hpi_byte is a typedef for
 # ``unsigned char``, so ``vector[unsigned char]`` is the same C++ type as the
@@ -336,11 +339,22 @@ cdef extern from "compress_plugin_demo.h":
     ctypedef struct TCompressPlugin_lz4hc:
         hdiff_TCompress base
         int             compress_level  # 3..12
+# TCompressPlugin_tuz structure for custom tinyuz configuration
+cdef extern from "compress_plugin_demo.h":
+    ctypedef struct tuz_TCompressProps:
+        size_t   dictSize        # 1..2**30
+        size_t   maxSaveLength   # 127..65535
+        size_t   threadNum
+        cpp_bool isNeedLiteralLine
+
+    ctypedef struct TCompressPlugin_tuz:
+        hdiff_TCompress    base
+        tuz_TCompressProps props
 
 # Type aliases for compression parameters
-CompressionType = Literal["none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp", "xz", "lz4", "lz4hc"]
+CompressionType = Literal["none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp", "xz", "lz4", "lz4hc", "tuz"]
 # The subset of CompressionType that has a lite compress-type byte.
-LiteCompressionType = Literal["none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp", "lz4", "lz4hc"]
+LiteCompressionType = Literal["none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp", "lz4", "lz4hc", "tuz"]
 
 # Constants for convenience
 COMPRESSION_NONE = "none"
@@ -353,9 +367,10 @@ COMPRESSION_TAMP = "tamp"
 COMPRESSION_XZ = "xz"
 COMPRESSION_LZ4 = "lz4"
 COMPRESSION_LZ4HC = "lz4hc"
+COMPRESSION_TUZ = "tuz"
 
 
-_valid_compression_types = {"none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp", "xz", "lz4", "lz4hc"}
+_valid_compression_types = {"none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp", "xz", "lz4", "lz4hc", "tuz"}
 
 # Codecs that have a compress-type byte in the "lite" diff header: every
 # upstream ``hpi_compressType`` value this build can encode, plus tamp's
@@ -413,6 +428,8 @@ cdef const hdiff_TCompress* get_compress_plugin(str compression):
         return <const hdiff_TCompress*>&lz4CompressPlugin
     elif compression == COMPRESSION_LZ4HC:
         return <const hdiff_TCompress*>&lz4hcCompressPlugin
+    elif compression == COMPRESSION_TUZ:
+        return <const hdiff_TCompress*>&tuzCompressPlugin
     else:
         return NULL
 
@@ -446,6 +463,8 @@ cdef const hpatch_TDecompress* get_decompress_plugin(str compression):
         return <const hpatch_TDecompress*>&_7zXZDecompressPlugin
     elif compression == COMPRESSION_LZ4 or compression == COMPRESSION_LZ4HC:
         return <const hpatch_TDecompress*>&lz4DecompressPlugin
+    elif compression == COMPRESSION_TUZ:
+        return <const hpatch_TDecompress*>&tuzDecompressPlugin
     else:
         return NULL
 
@@ -761,6 +780,38 @@ cdef TCompressPlugin_lz4hc* create_custom_lz4hc_plugin(lz4hc_config) except NULL
 
     return custom_plugin
 
+cdef TCompressPlugin_tuz* create_custom_tuz_plugin(tuz_config) except NULL:
+    """Create a custom tinyuz plugin instance with configuration.
+
+    Parameters
+    ----------
+    tuz_config : TuzConfig
+        The tinyuz configuration object
+
+    Returns
+    -------
+    TCompressPlugin_tuz*
+        Pointer to configured tinyuz plugin
+
+    Raises
+    ------
+    MemoryError
+        If memory allocation fails
+    """
+    cdef TCompressPlugin_tuz* custom_plugin = <TCompressPlugin_tuz*>malloc(sizeof(TCompressPlugin_tuz))
+    if custom_plugin == NULL:
+        raise MemoryError("Failed to allocate memory for custom tinyuz plugin")
+
+    cdef const TCompressPlugin_tuz* base_plugin = <const TCompressPlugin_tuz*>&tuzCompressPlugin
+    custom_plugin[0] = base_plugin[0]
+
+    custom_plugin.props.dictSize = tuz_config.dict_size
+    custom_plugin.props.maxSaveLength = tuz_config.max_save_length
+    custom_plugin.props.threadNum = tuz_config.threads
+    custom_plugin.props.isNeedLiteralLine = tuz_config.literal_line
+
+    return custom_plugin
+
 cdef hpatch_StreamPos_t calculate_new_data_size(const unsigned char* diff_ptr, const unsigned char* diff_end) except -1:
     """Calculate the new data size from an uncompressed diff by examining covers.
 
@@ -978,6 +1029,10 @@ cdef CompressionPlugin _resolve_compression_to_plugin(compression: Union[Compres
         custom_plugin_ptr = <void*>create_custom_lz4hc_plugin(compression)
         compress_plugin = <const hdiff_TCompress*>custom_plugin_ptr
         plugin_type = "lz4hc_config"
+    elif isinstance(compression, TuzConfig):
+        custom_plugin_ptr = <void*>create_custom_tuz_plugin(compression)
+        compress_plugin = <const hdiff_TCompress*>custom_plugin_ptr
+        plugin_type = "tuz_config"
     else:
         # String-based compression - normalize and validate
         compression_str = str(compression).lower()
@@ -1330,6 +1385,8 @@ cdef hpi_compressType _lite_compress_type_tag(str codec_name) except *:
         return <hpi_compressType><int>_HPI_COMPRESS_TYPE_TAMP
     elif codec_name == COMPRESSION_LZ4 or codec_name == COMPRESSION_LZ4HC:
         return hpi_compressType_lz4
+    elif codec_name == COMPRESSION_TUZ:
+        return hpi_compressType_tuz
     else:
         raise HDiffPatchError(f"No lite compress-type tag for codec: {codec_name}")
 
@@ -1368,6 +1425,8 @@ cdef str _lite_normalize_compression(compression):
         return COMPRESSION_LZ4
     if isinstance(compression, Lz4HCConfig):
         return COMPRESSION_LZ4HC
+    if isinstance(compression, TuzConfig):
+        return COMPRESSION_TUZ
     if isinstance(compression, ZStdConfig):
         return COMPRESSION_ZSTD
     if isinstance(compression, BZip2Config):
@@ -1428,8 +1487,8 @@ def diff_lite(
     compression : LiteCompressionType, BaseConfig, or None, default=None
         Compression algorithm to use. Any codec with a compress-type byte in
         the lite header is accepted: ``"none"``, ``"zlib"``, ``"lzma"``,
-        ``"lzma2"``, ``"zstd"``, ``"bzip2"``, ``"lz4"``, ``"lz4hc"``, and
-        ``"tamp"`` (the latter under the vendor-specific byte ``0xF0``). A
+        ``"lzma2"``, ``"zstd"``, ``"bzip2"``, ``"lz4"``, ``"lz4hc"``, ``"tuz"``,
+        and ``"tamp"`` (the latter under the vendor-specific byte ``0xF0``). A
         device can only apply the codecs whose decoders it links.
     validate : bool, default=True
         If True, validates that the lite diff reconstructs new_data from old_data
@@ -1528,6 +1587,8 @@ cdef hpatch_TDecompress* _lite_header_decompress_plugin(hpi_compressType compres
         return <hpatch_TDecompress*>&bz2DecompressPlugin
     elif ct == <int>hpi_compressType_lz4:
         return <hpatch_TDecompress*>&lz4DecompressPlugin
+    elif ct == <int>hpi_compressType_tuz:
+        return <hpatch_TDecompress*>&tuzDecompressPlugin
     elif ct == _HPI_COMPRESS_TYPE_TAMP:
         return <hpatch_TDecompress*>&tampDecompressPlugin
     raise HDiffPatchError(

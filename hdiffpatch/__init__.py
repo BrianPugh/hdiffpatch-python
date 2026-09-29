@@ -11,6 +11,7 @@ __all__ = [
     "COMPRESSION_NONE",
     "COMPRESSION_TAMP",
     "COMPRESSION_XZ",
+    "COMPRESSION_TUZ",
     "COMPRESSION_ZLIB",
     "COMPRESSION_ZSTD",
     "CompressionType",
@@ -35,6 +36,7 @@ __all__ = [
     "Lzma2Config",
     "TampConfig",
     "XzConfig",
+    "TuzConfig",
     "ZStdConfig",
 ]
 
@@ -53,6 +55,7 @@ from ._c_extension import (
     COMPRESSION_LZMA2,
     COMPRESSION_NONE,
     COMPRESSION_TAMP,
+    COMPRESSION_TUZ,
     COMPRESSION_XZ,
     COMPRESSION_ZLIB,
     COMPRESSION_ZSTD,
@@ -78,6 +81,9 @@ from ._lzma_config import (
 )
 from ._tamp_config import (
     TampConfig,
+)
+from ._tuz_config import (
+    TuzConfig,
 )
 from ._xz_config import (
     XzConfig,
