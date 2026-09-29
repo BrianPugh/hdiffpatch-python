@@ -31,3 +31,7 @@
 [submodule "hdiffpatch/_c_src/brotli"]
 	path = hdiffpatch/_c_src/brotli
 	url = https://github.com/google/brotli.git
+[submodule "hdiffpatch/_c_src/lzham_codec"]
+	path = hdiffpatch/_c_src/lzham_codec
+	url = https://github.com/BrianPugh/lzham_codec.git
+	branch = portability

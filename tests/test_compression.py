@@ -22,6 +22,7 @@ class TestCompressionTypes:
         assert hasattr(hdiffpatch, "COMPRESSION_LZ4HC")
         assert hasattr(hdiffpatch, "COMPRESSION_TUZ")
         assert hasattr(hdiffpatch, "COMPRESSION_BROTLI")
+        assert hasattr(hdiffpatch, "COMPRESSION_LZHAM")
 
         assert hdiffpatch.COMPRESSION_NONE == "none"
         assert hdiffpatch.COMPRESSION_ZLIB == "zlib"
@@ -35,6 +36,7 @@ class TestCompressionTypes:
         assert hdiffpatch.COMPRESSION_LZ4HC == "lz4hc"
         assert hdiffpatch.COMPRESSION_TUZ == "tuz"
         assert hdiffpatch.COMPRESSION_BROTLI == "brotli"
+        assert hdiffpatch.COMPRESSION_LZHAM == "lzham"
 
 
 class TestUncompressedDiffs:

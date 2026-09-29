@@ -54,7 +54,7 @@ A patch is typically much smaller than the new data itself, making **hdiffpatch*
 
 ## Lite-format diffs for HPatchLite
 
-For extremely memory-constrained devices, `diff_lite` produces the compact "lite" format consumed by HDiffPatch's tiny on-device applier, [HPatchLite](https://github.com/sisong/HPatchLite) (`hpatch_lite_patch`). Every codec with a compress-type byte in the lite header is accepted: `"none"`, `"zlib"`, `"lzma"`, `"lzma2"`, `"zstd"`, `"bzip2"`, `"lz4"`, `"lz4hc"`, `"tuz"` (tinyuz), `"brotli"`, and `"tamp"` (the last under the vendor-specific byte `0xF0`). `hpatch_lite_patch` does no decompression itself, so pick a codec whose decoder fits on your device; `"lzma"`, `"zlib"`, and `"tamp"` are the small ones.
+For extremely memory-constrained devices, `diff_lite` produces the compact "lite" format consumed by HDiffPatch's tiny on-device applier, [HPatchLite](https://github.com/sisong/HPatchLite) (`hpatch_lite_patch`). Every codec with a compress-type byte in the lite header is accepted: `"none"`, `"zlib"`, `"lzma"`, `"lzma2"`, `"zstd"`, `"bzip2"`, `"lz4"`, `"lz4hc"`, `"tuz"` (tinyuz), `"brotli"`, `"lzham"`, and `"tamp"` (the last under the vendor-specific byte `0xF0`). `hpatch_lite_patch` does no decompression itself, so pick a codec whose decoder fits on your device; `"lzma"`, `"zlib"`, and `"tamp"` are the small ones.
 
 ```python
 import hdiffpatch
@@ -65,7 +65,7 @@ restored = hdiffpatch.apply_lite(old, lite)   # == new
 
 `apply_lite` is the lite-format counterpart of `apply`: it drives the vendored HPatchLite applier (the same code path a device runs) to reconstruct the new data. The codec is auto-detected from the self-describing lite header, so `apply_lite` takes no `compression` argument.
 
-`recompress_lite` is the lite-format counterpart of `recompress`. It re-encodes an existing lite diff with another lite codec without redoing the match search, and for a diff made by `diff_lite` the result is byte-identical to calling `diff_lite` with that codec directly (an inplace-variant diff, which `diff_lite` doesn't produce, keeps its header), so a diff needed under several codecs can be computed once uncompressed and then recompressed per codec:
+`recompress_lite` is the lite-format counterpart of `recompress`. It re-encodes an existing lite diff with another lite codec without redoing the match search, and for a diff made by `diff_lite` the result is byte-identical to calling `diff_lite` with that codec directly (except for multithreaded LZHAM, whose output varies from run to run; an inplace-variant diff, which `diff_lite` doesn't produce, keeps its header), so a diff needed under several codecs can be computed once uncompressed and then recompressed per codec:
 
 ```python
 base = hdiffpatch.diff_lite(old, new)

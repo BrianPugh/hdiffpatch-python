@@ -11,6 +11,7 @@ from hdiffpatch import (
     HDiffPatchError,
     Lz4Config,
     Lz4HCConfig,
+    LzhamConfig,
     Lzma2Config,
     LzmaConfig,
     TampConfig,
@@ -35,6 +36,7 @@ LITE_TARGETS = [
     hdiffpatch.COMPRESSION_LZ4HC,
     hdiffpatch.COMPRESSION_TUZ,
     hdiffpatch.COMPRESSION_BROTLI,
+    LzhamConfig(),  # the string "lzham" is multithreaded, so its output isn't reproducible
     ZlibConfig(window=9),
     ZlibConfig.fast(),
     LzmaConfig(window=12),
@@ -47,6 +49,7 @@ LITE_TARGETS = [
     Lz4Config.fast(),
     Lz4HCConfig.best_compression(),
     BrotliConfig.fast(),
+    LzhamConfig.fast(),
 ]
 
 LITE_SOURCES = [
@@ -60,6 +63,7 @@ LITE_SOURCES = [
     hdiffpatch.COMPRESSION_LZ4,
     hdiffpatch.COMPRESSION_TUZ,
     hdiffpatch.COMPRESSION_BROTLI,
+    hdiffpatch.COMPRESSION_LZHAM,
 ]
 
 
@@ -187,7 +191,7 @@ def test_recompress_lite_rejects_garbage_header(garbage):
         recompress_lite(garbage, "zlib")
 
 
-@pytest.mark.parametrize("source", ["zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp", "lz4", "tuz", "brotli"])
+@pytest.mark.parametrize("source", ["zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp", "lz4", "tuz", "brotli", "lzham"])
 def test_recompress_lite_rejects_corrupt_body(source, large_repetitive_data):
     """A truncated compressed body raises HDiffPatchError."""
     lite = diff_lite(large_repetitive_data["old"], large_repetitive_data["new"], compression=source)
