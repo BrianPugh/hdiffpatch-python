@@ -16,9 +16,11 @@ class TuzConfig(BaseConfig):
     ----------
     dict_size : int, default=16777216
         Dictionary size in bytes (1 to 2**30). Any value is allowed, not just
-        powers of 2. Larger dictionaries compress better, and decompression
-        needs ``dict_size`` bytes of memory. The encoder shrinks it to the
-        input size when the input is smaller.
+        powers of 2. Larger dictionaries compress better but cost memory on
+        both sides: decompression needs ``dict_size`` bytes plus a small code
+        cache, and compression needs roughly ``18 * dict_size`` bytes per
+        thread. The encoder shrinks it to the input size when the input is
+        smaller.
     max_save_length : int, default=65535
         Longest match length (127-65535).
     threads : int, default=1

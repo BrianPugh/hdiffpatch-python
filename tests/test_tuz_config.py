@@ -9,7 +9,7 @@ from hdiffpatch import TuzConfig
 
 
 def test_default_construction():
-    """Defaults match the upstream tinyuz plugin (16MB dictionary, longest match length)."""
+    """Defaults: 16MB dictionary and the longest match length (as in the upstream plugin), 1 thread, no literal lines."""
     config = TuzConfig()
     assert config.dict_size == 1 << 24
     assert config.max_save_length == 65535
