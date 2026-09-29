@@ -42,15 +42,22 @@ Diffing two consecutive MicroPython RPI_PICO firmware releases (~650 KB each, be
 ===========  =========  ==========  ===============  =========  =============
 compression  diff (ms)  apply (ms)  recompress (ms)  diff size  % of new file
 ===========  =========  ==========  ===============  =========  =============
-none              25.5         0.4                —    161,041          24.1%
-zlib              30.9         1.0              5.2     99,772          14.9%
-lzma              36.5         3.3             10.9     92,647          13.9%
-zstd              41.3         0.6             15.7     97,520          14.6%
-bzip2             34.2         4.0              8.6    102,686          15.4%
-tamp              40.5         1.1             15.1    110,711          16.6%
+none              25.8         0.4                —    161,041          24.1%
+zlib              32.0         0.9              5.3     99,772          14.9%
+lzma              36.6         3.3             10.9     92,647          13.9%
+lzma2             37.0         3.3             10.9     92,656          13.9%
+xz                36.6         3.6             11.4     92,865          13.9%
+zstd              42.4         0.6             16.0     97,520          14.6%
+bzip2             34.7         4.1              8.6    102,686          15.4%
+brotli            29.9         1.1              3.7     98,925          14.8%
+lzham             38.2         1.6             12.3     97,500          14.6%
+lz4               26.7         0.5              0.1    131,067          19.6%
+lz4hc             30.0         0.6              2.6    120,571          18.1%
+tuz              104.5         1.2             76.0    104,363          15.6%
+tamp              43.4         1.2             16.3    110,711          16.6%
 ===========  =========  ==========  ===============  =========  =============
 
-``validate=True`` measured 26.0 ms against 25.5 ms with ``validate=False`` (uncompressed diff) — a few percent of overhead.
+``validate=True`` measured 27.4 ms against 26.9 ms with ``validate=False`` (uncompressed diff) — a few percent of overhead.
 
 Standard vs. lite
 ~~~~~~~~~~~~~~~~~~
@@ -68,10 +75,13 @@ HPatchLite is HDiffPatch's tiny on-device applier format (``hpatch_lite_patch``)
 ===========  =============  ==============  ====================  ==============  ===============  ========  =========  ========
 compression  std diff (ms)  lite diff (ms)  lite recompress (ms)  std apply (ms)  lite apply (ms)  std size  lite size  lite/std
 ===========  =============  ==============  ====================  ==============  ===============  ========  =========  ========
-none                  25.8            25.9                     —             0.5              0.2   161,041    637,195    395.7%
-zlib                  33.0           128.7                 106.5             1.0              0.9    99,772    106,275    106.5%
-lzma                  40.8            72.6                  43.7             3.8              3.8    92,647     96,859    104.5%
-tamp                  45.3            68.2                  40.6             1.2              1.5   110,711    125,726    113.6%
+none                  28.9            27.3                     —             0.5              0.2   161,041    637,195    395.7%
+zlib                  34.1           131.4                 108.9             1.0              1.0    99,772    106,275    106.5%
+lzma                  40.5            72.0                  41.8             3.6              3.4    92,647     96,859    104.5%
+lz4                   29.3            27.3                   0.4             0.5              0.2   131,067    148,758    113.5%
+lz4hc                 29.8           128.8                 102.9             0.5              0.3   120,571    121,172    100.5%
+tuz                  105.4           758.0                 724.4             1.2              2.1   104,363    105,910    101.5%
+tamp                  43.2            67.7                  40.0             1.2              1.5   110,711    125,726    113.6%
 ===========  =============  ==============  ====================  ==============  ===============  ========  =========  ========
 
-The ``none`` row is a ~4x outlier because the uncompressed lite encoding stores many literal new-data bytes; with a codec those literals compress and the gap collapses to ~5-14%, so lite should be used with compression.
+The ``none`` row is a ~4x outlier because the uncompressed lite encoding stores many literal new-data bytes; with a codec those literals compress and the gap collapses to ~0.5-14%, so lite should be used with compression.
