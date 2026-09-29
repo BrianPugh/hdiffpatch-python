@@ -65,7 +65,7 @@ restored = hdiffpatch.apply_lite(old, lite)   # == new
 
 `apply_lite` is the lite-format counterpart of `apply`: it drives the vendored HPatchLite applier (the same code path a device runs) to reconstruct the new data. The codec is auto-detected from the self-describing lite header, so `apply_lite` takes no `compression` argument.
 
-`recompress_lite` is the lite-format counterpart of `recompress`. It re-encodes an existing lite diff with another lite codec without redoing the match search, and for a diff made by `diff_lite` the result is byte-identical to calling `diff_lite` with that codec directly (an inplace-variant diff, which `diff_lite` doesn't produce, keeps its header), so a diff needed under several codecs can be computed once uncompressed and then recompressed per codec:
+`recompress_lite` is the lite-format counterpart of `recompress`. It re-encodes an existing lite diff with another lite codec without redoing the match search, and for a diff made by `diff_lite` the result is byte-identical to calling `diff_lite` with that codec directly (except for multithreaded LZHAM, whose output varies from run to run; an inplace-variant diff, which `diff_lite` doesn't produce, keeps its header), so a diff needed under several codecs can be computed once uncompressed and then recompressed per codec:
 
 ```python
 base = hdiffpatch.diff_lite(old, new)

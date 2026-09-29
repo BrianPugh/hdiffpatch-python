@@ -1139,10 +1139,6 @@ cdef CompressionPlugin _resolve_compression_to_plugin(compression: Union[Compres
 
         if compression_str == COMPRESSION_NONE:
             return None
-        if compression_str == COMPRESSION_LZHAM:
-            # The upstream plugin defaults to 4 threads, and multithreaded LZHAM
-            # output varies between runs; a single thread keeps "lzham" deterministic.
-            return _resolve_compression_to_plugin(LzhamConfig())
 
         compress_plugin = get_compress_plugin(compression_str)
         if compress_plugin == NULL:
@@ -1783,7 +1779,8 @@ def recompress_lite(
     This is the lite-format counterpart of :func:`recompress`. Only the diff
     body is re-encoded; the match search is not redone, so for a diff made by
     :func:`diff_lite` the output is byte-identical to calling :func:`diff_lite`
-    with ``compression`` directly.
+    with ``compression`` directly (except for multithreaded LZHAM, including
+    the string ``"lzham"``, whose output varies from run to run).
     A common pattern is to create the diff once uncompressed
     (``diff_lite(old, new)``) and then derive each compressed variant from it.
 

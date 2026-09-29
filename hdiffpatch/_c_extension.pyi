@@ -237,7 +237,8 @@ def recompress_lite(
     This is the lite-format counterpart of ``recompress``. Only the diff
     body is re-encoded; the match search is not redone, so for a diff made by
     ``diff_lite`` the output is byte-identical to calling ``diff_lite`` with
-    ``compression`` directly.
+    ``compression`` directly (except for multithreaded LZHAM, including the
+    string ``"lzham"``, whose output varies from run to run).
     A common pattern is to create the diff once uncompressed
     (``diff_lite(old, new)``) and then derive each compressed variant from it.
 

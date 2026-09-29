@@ -23,7 +23,8 @@ class LzhamConfig(BaseConfig):
     threads : int, default=1
         Number of compression threads (1-64). With more than 1 thread the
         compressed bytes can differ from run to run (LZHAM's parse depends on
-        thread scheduling), though every output decodes to the same data.
+        thread scheduling), though every output decodes to the same data. The
+        string ``"lzham"`` uses the upstream plugin's 4 threads.
 
     Examples
     --------

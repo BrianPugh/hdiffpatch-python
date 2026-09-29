@@ -36,7 +36,7 @@ LITE_TARGETS = [
     hdiffpatch.COMPRESSION_LZ4HC,
     hdiffpatch.COMPRESSION_TUZ,
     hdiffpatch.COMPRESSION_BROTLI,
-    hdiffpatch.COMPRESSION_LZHAM,
+    LzhamConfig(),  # the string "lzham" is multithreaded, so its output isn't reproducible
     ZlibConfig(window=9),
     ZlibConfig.fast(),
     LzmaConfig(window=12),
