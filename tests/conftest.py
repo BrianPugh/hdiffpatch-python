@@ -67,6 +67,7 @@ def compression_types():
         hdiffpatch.COMPRESSION_XZ,
         hdiffpatch.COMPRESSION_LZ4,
         hdiffpatch.COMPRESSION_LZ4HC,
+        hdiffpatch.COMPRESSION_TUZ,
     ]
 
 
@@ -84,6 +85,7 @@ def all_compression_types():
         hdiffpatch.COMPRESSION_XZ,
         hdiffpatch.COMPRESSION_LZ4,
         hdiffpatch.COMPRESSION_LZ4HC,
+        hdiffpatch.COMPRESSION_TUZ,
     ]
 
 

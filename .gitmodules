@@ -25,3 +25,6 @@
 [submodule "hdiffpatch/_c_src/lz4"]
 	path = hdiffpatch/_c_src/lz4
 	url = https://github.com/lz4/lz4.git
+[submodule "hdiffpatch/_c_src/tinyuz"]
+	path = hdiffpatch/_c_src/tinyuz
+	url = https://github.com/sisong/tinyuz.git

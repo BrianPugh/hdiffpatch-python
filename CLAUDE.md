@@ -56,12 +56,12 @@ Linting/typing is configured in `pyproject.toml`: ruff (line length 120, numpy d
 
 - **`cythonize.py`**: compiles `hdiffpatch/_c_extension.pyx` to C++ with optimization directives.
 - **`rebuild.py`**: runs `cythonize.py`, then reinstalls the package in editable mode. This is the one command to run after editing `.pyx` files.
-- **`setup.py`**: builds a single extension module (`hdiffpatch._c_extension`) that statically embeds all C/C++ dependencies from `hdiffpatch/_c_src/` (HDiffPatch, zlib, libdeflate, lzma, zstd, bzip2, tamp, lz4, libmd5) with `-O3` and platform-specific optimizations. Compression plugins are enabled via preprocessor defines (e.g. `_CompressPlugin_lzma`).
+- **`setup.py`**: builds a single extension module (`hdiffpatch._c_extension`) that statically embeds all C/C++ dependencies from `hdiffpatch/_c_src/` (HDiffPatch, zlib, libdeflate, lzma, zstd, bzip2, tamp, lz4, tinyuz, libmd5) with `-O3` and platform-specific optimizations. Compression plugins are enabled via preprocessor defines (e.g. `_CompressPlugin_lzma`).
 
 ### Package layout
 
 - **`hdiffpatch/_c_extension.pyx`**: the entire Cython interface — core functions, constants, and the `HDiffPatchError` exception. `hdiffpatch/_c_extension.pyi` is the hand-maintained type stub; keep it in sync when changing the `.pyx` API.
-- **`hdiffpatch/_base_config.py`** + per-algorithm config modules (`_zlib_config.py`, `_lzma_config.py`, `_zstd_config.py`, `_bzip2_config.py`, `_tamp_config.py`, `_xz_config.py`, `_lz4_config.py`): frozen attrs classes for fine-grained compression settings. `BaseConfig` defines classmethod presets (`fast`, `balanced`, `best_compression`, `minimal_memory`) that subclasses implement.
+- **`hdiffpatch/_base_config.py`** + per-algorithm config modules (`_zlib_config.py`, `_lzma_config.py`, `_zstd_config.py`, `_bzip2_config.py`, `_tamp_config.py`, `_xz_config.py`, `_lz4_config.py`, `_tuz_config.py`): frozen attrs classes for fine-grained compression settings. `BaseConfig` defines classmethod presets (`fast`, `balanced`, `best_compression`, `minimal_memory`) that subclasses implement.
 - **`hdiffpatch/__init__.py`**: assembles the public API; `__version__` is managed by setuptools-scm — don't edit it.
 
 ### Public API
@@ -72,7 +72,7 @@ apply(old_data: bytes, diff_data: bytes) -> bytes      # auto-detects compressio
 recompress(diff_data: bytes, compression=None) -> bytes  # re-encode an existing diff (incl. hdiffz output)
 ```
 
-- `compression` accepts a `CompressionType` literal string (`"none"`, `"zlib"`, `"lzma"`, `"lzma2"`, `"zstd"`, `"bzip2"`, `"tamp"`, `"xz"`, `"lz4"`, `"lz4hc"`), a config object (e.g. `ZStdConfig(level=22)`), or `None`.
+- `compression` accepts a `CompressionType` literal string (`"none"`, `"zlib"`, `"lzma"`, `"lzma2"`, `"zstd"`, `"bzip2"`, `"tamp"`, `"xz"`, `"lz4"`, `"lz4hc"`, `"tuz"`), a config object (e.g. `ZStdConfig(level=22)`), or `None`.
 - There is a single exception type, `HDiffPatchError`, raised for all diff/patch/compression failures.
 - Uses Literal types instead of Enums for simplicity and type checker compatibility.
 
