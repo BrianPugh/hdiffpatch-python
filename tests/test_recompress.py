@@ -1,5 +1,7 @@
 """Unit tests for recompress functionality with comprehensive round-trip validation."""
 
+import random
+
 import pytest
 
 import hdiffpatch
@@ -274,6 +276,17 @@ class TestRecompressEdgeCases:
         # Validate round-trip
         result = hdiffpatch.apply(old_data, recompressed)
         assert result == new_data
+
+    def test_recompress_multithreaded_encoder(self):
+        """A multithreaded encoder writes from worker threads, which must not touch Python objects."""
+        rng = random.Random(0)  # noqa: S311
+        old_data = rng.randbytes(1 << 16)
+        new_data = old_data + rng.randbytes(3 << 20)  # several encoder blocks of new bytes
+        diff_data = hdiffpatch.diff(old_data, new_data)
+
+        recompressed = hdiffpatch.recompress(diff_data, hdiffpatch.Lzma2Config(level=1, window=16, threads=4))
+
+        assert hdiffpatch.apply(old_data, recompressed) == new_data
 
 
 class TestRecompressEffectiveness:
