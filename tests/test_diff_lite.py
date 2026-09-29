@@ -3,6 +3,7 @@
 import subprocess
 import sys
 import textwrap
+from typing import get_args
 
 import pytest
 
@@ -41,6 +42,14 @@ LITE_HEADER_TAG = {
 LITE_UNSUPPORTED = [
     hdiffpatch.COMPRESSION_XZ,
 ]
+
+
+def test_lite_compression_type_matches_runtime():
+    """LiteCompressionType lists exactly the codecs the lite functions accept."""
+    lite_types = set(get_args(hdiffpatch.LiteCompressionType))
+
+    assert lite_types == set(LITE_SUPPORTED)
+    assert lite_types | set(LITE_UNSUPPORTED) == set(get_args(hdiffpatch.CompressionType))
 
 
 def test_diff_lite_basic(simple_text_data):

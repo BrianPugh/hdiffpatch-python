@@ -1,6 +1,6 @@
 """HDiffPatch Cython extension for high-performance binary diff/patch operations."""
 
-from typing import Union, Literal, TYPE_CHECKING
+from typing import Union, Literal, TYPE_CHECKING, get_args
 
 if TYPE_CHECKING:
     from ._base_config import BaseConfig
@@ -325,6 +325,8 @@ cdef extern from "compress_plugin_demo.h":
 
 # Type aliases for compression parameters
 CompressionType = Literal["none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp", "xz"]
+# The subset of CompressionType that has a lite compress-type byte.
+LiteCompressionType = Literal["none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp"]
 
 # Constants for convenience
 COMPRESSION_NONE = "none"
@@ -343,7 +345,7 @@ _valid_compression_types = {"none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "t
 # upstream ``hpi_compressType`` value this build can encode, plus tamp's
 # vendor-specific byte. ``hpatch_lite_patch`` does no decompression itself, so
 # which of these a device can apply depends on the decoders it links.
-_lite_supported_compression_types = {"none", "zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp"}
+_lite_supported_compression_types = set(get_args(LiteCompressionType))
 
 # tamp has no upstream ``hpi_compressType`` enum value. This vendor-specific tag
 # is written into the lite-diff header and must match whatever the device-side
@@ -1314,7 +1316,7 @@ def diff_lite(
     old_data: bytes,
     new_data: bytes,
     *,
-    compression: Union[CompressionType, 'BaseConfig', None] = None,
+    compression: Union[LiteCompressionType, 'BaseConfig', None] = None,
     validate: bool = True,
     big_cache_match: bool = False,
 ) -> bytes:
@@ -1331,7 +1333,7 @@ def diff_lite(
         The original data.
     new_data : bytes
         The new data to diff against.
-    compression : CompressionType, BaseConfig, or None, default=None
+    compression : LiteCompressionType, BaseConfig, or None, default=None
         Compression algorithm to use. Any codec with a compress-type byte in
         the lite header is accepted: ``"none"``, ``"zlib"``, ``"lzma"``,
         ``"lzma2"``, ``"zstd"``, ``"bzip2"``, and ``"tamp"`` (the latter under
@@ -1504,7 +1506,7 @@ def apply_lite(old_data: bytes, lite_diff: bytes) -> bytes:
 
 def recompress_lite(
     lite_diff: bytes,
-    compression: Union[CompressionType, 'BaseConfig', None],
+    compression: Union[LiteCompressionType, 'BaseConfig', None],
 ) -> bytes:
     """Recompress an HPatchLite "lite"-format diff with a different compression algorithm.
 
@@ -1522,7 +1524,7 @@ def recompress_lite(
     ----------
     lite_diff : bytes
         A lite-format diff, compressed with any lite codec or uncompressed.
-    compression : CompressionType, BaseConfig, or None
+    compression : LiteCompressionType, BaseConfig, or None
         Target compression, with the same accepted forms as :func:`diff_lite`:
         any lite codec name or a matching ``*Config``. ``None``/``"none"``
         stores the body uncompressed.

@@ -12,6 +12,7 @@ __all__ = [
     "COMPRESSION_ZLIB",
     "COMPRESSION_ZSTD",
     "CompressionType",
+    "LiteCompressionType",
     # Exceptions
     "HDiffPatchError",
     # Core functions
@@ -52,6 +53,7 @@ from ._c_extension import (
     CompressionType,
     # Exceptions
     HDiffPatchError,
+    LiteCompressionType,
     # Core functions
     apply,
     apply_lite,

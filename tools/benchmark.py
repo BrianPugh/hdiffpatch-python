@@ -12,12 +12,12 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 
 import hdiffpatch
-from hdiffpatch import CompressionType
+from hdiffpatch import CompressionType, LiteCompressionType
 
 BINARIES = Path(__file__).parent.parent / "tests" / "binaries"
 COMPRESSIONS: list[CompressionType] = ["none", "zlib", "lzma", "zstd", "bzip2", "tamp"]
-# Codecs HPatchLite can decode; the only ones diff_lite/apply_lite accept.
-LITE_COMPRESSIONS: list[CompressionType] = ["none", "zlib", "lzma", "tamp"]
+# Lite codecs small enough to decode on a microcontroller.
+LITE_COMPRESSIONS: list[LiteCompressionType] = ["none", "zlib", "lzma", "tamp"]
 REPEATS = 5
 
 COLUMNS = ("compression", "diff (ms)", "apply (ms)", "recompress (ms)", "diff size", "% of new file")
