@@ -1,5 +1,7 @@
 """Tests for BrotliConfig and brotli compression."""
 
+import random
+
 import pytest
 
 import hdiffpatch
@@ -92,3 +94,18 @@ def test_recompress_to_and_from_brotli(large_repetitive_data):
     brotli_diff = hdiffpatch.recompress(zstd_diff, "brotli")
     assert hdiffpatch.apply(old_data, brotli_diff) == new_data
     assert hdiffpatch.recompress(brotli_diff, "zstd") == zstd_diff
+
+
+def test_large_window_round_trip():
+    """A window above 24 (brotli's large-window mode) reaches matches more than 16MB back and round-trips."""
+    rng = random.Random(0)  # noqa: S311
+    block = rng.randbytes(17 << 20)
+    old_data = b"x" * 1024
+    # The only repeat is 17MB back: out of reach for a 16MB (window=24) stream, in reach at window=25.
+    new_data = block + block[: 1 << 20]
+
+    standard = hdiffpatch.diff(old_data, new_data, compression=BrotliConfig(level=4, window=24), validate=False)
+    large = hdiffpatch.diff(old_data, new_data, compression=BrotliConfig(level=4, window=25))
+
+    assert len(large) < len(standard) - (1 << 19)
+    assert hdiffpatch.apply(old_data, large) == new_data
