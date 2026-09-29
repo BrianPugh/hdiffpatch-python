@@ -115,6 +115,7 @@ def get_sources():
         "LzFindOpt.c",
         "LzFindMt.c",
         "Lzma2Dec.c",
+        "Lzma2DecMt.c",
         "Lzma2Enc.c",
         "LzmaDec.c",
         "LzmaEnc.c",
