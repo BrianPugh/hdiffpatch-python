@@ -1,8 +1,13 @@
 """LzhamConfig class for configuring LZHAM compression parameters."""
 
+import sys
+
 import attrs
 
 from ._base_config import BaseConfig
+
+# LZHAM_MAX_DICT_SIZE_LOG2_X64 / _X86: the largest dictionary depends on pointer size.
+_MAX_WINDOW = 29 if sys.maxsize > 2**32 else 26
 
 
 @attrs.frozen
@@ -50,7 +55,7 @@ class LzhamConfig(BaseConfig):
         validator=attrs.validators.and_(
             attrs.validators.instance_of(int),
             attrs.validators.ge(15),
-            attrs.validators.le(29),
+            attrs.validators.le(_MAX_WINDOW),
         ),
     )
     threads: int = attrs.field(

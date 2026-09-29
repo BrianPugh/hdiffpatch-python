@@ -46,6 +46,9 @@ class CustomBuildExt(build_ext):
                     # Add C++11 for Unix-like systems
                     extra_postargs = extra_postargs + ["-std=c++11"]
                 # Windows already has /std:c++17 set globally
+            # LZHAM's CMake marks -fno-strict-aliasing as required for its sources.
+            if "lzham_codec" in src and platform.system() != "Windows":
+                extra_postargs = extra_postargs + ["-fno-strict-aliasing"]
             return original_compile(obj, src, ext_name, cc_args, extra_postargs, pp_opts)
 
         self.compiler._compile = custom_compile
