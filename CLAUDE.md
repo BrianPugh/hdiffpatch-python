@@ -82,6 +82,21 @@ recompress(diff_data: bytes, compression=None) -> bytes  # re-encode an existing
 - `tests/binaries/` holds real MicroPython firmware images and hdiffz-produced diffs used by `test_binary_compatibility.py` to verify compatibility with upstream HDiffPatch tooling.
 - `tools/micropython-binary-demo.py` is a demo script exercising the same firmware-diff use case.
 
+### Adding a codec
+
+A new codec touches every codec list, and missing one fails quietly (a test fixture skips it, or the lite API rejects it):
+
+- `setup.py`: sources, include dirs, and the `-D_CompressPlugin_*` define. Vendor the library as a submodule under `hdiffpatch/_c_src/`; the sdist picks submodules up through setuptools-scm.
+- `_c_extension.pyx`: the extern plugin declarations, the `TCompressPlugin_*` struct, `CompressionType`, `COMPRESSION_*`, `_valid_compression_types`, `get_compress_plugin`/`get_decompress_plugin` (which must also accept the diff header's upstream name, e.g. `"7zXZ"`), a `create_custom_*_plugin`, and `_resolve_compression_to_plugin`. If upstream's `hpi_compressType` has a byte for it, also add it to `LiteCompressionType` (the runtime lite set is derived from it), `_lite_compress_type_tag`, `_lite_header_decompress_plugin` and `_lite_normalize_compression`.
+- The `.pyi` stub, `__init__.py` exports, a `_<codec>_config.py` module, the `compression_types`/`all_compression_types` fixtures, the sorted "Valid options" message in `tests/test_exceptions.py`, and the lite lists in `tests/test_diff_lite.py`/`tests/test_recompress_lite.py`.
+
+Gotchas:
+
+- Encoders with `threads > 1` (lzma2, xz, tinyuz, lzham) call the output stream's `write()` from worker threads, and upstream plugins default to 4 threads. Stream callbacks must never touch Python objects; write through upstream's C++ `TVectorAsStreamOutput` like `diff`/`recompress` do.
+- Multithreaded LZHAM output varies between runs (upstream's plugin can't set `LZHAM_COMP_FLAG_DETERMINISTIC_PARSING`), so byte-identity tests use `LzhamConfig()` (1 thread), never the `"lzham"` string.
+- lzham_codec is abandoned upstream; the submodule tracks the `portability` branch of BrianPugh/lzham_codec, so portability fixes go there.
+- Test Linux aarch64/GCC locally with Docker: copy the repo into a `python:3.13` container, `pip install --no-build-isolation .` (with `SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0`), then run pytest. Windows/MSVC is CI-only.
+
 ## Development Memories
 
 - Always run `uv run python rebuild.py` after `uv sync` for development setup
@@ -93,5 +108,6 @@ recompress(diff_data: bytes, compression=None) -> bytes  # re-encode an existing
 - TAMP compression is supported as a first-class compression type alongside zlib, zstd, etc.
 - All compression types should be tested with round-trip validation
 - Use the comprehensive fixture system in `conftest.py` for consistent test data
-- Run `uv run pre-commit run --all-files` before asking to commit to ensure pre-commit passes all checks
+- Run `uv run pre-commit run --all-files` before asking to commit to ensure pre-commit passes all checks. It skips untracked files, so `git add` new files first.
+- `uv run python` rebuilds the package before running anything, so a helper script can't run while the tree doesn't build (e.g. mid-rebase with conflict markers); use `uv run --no-project python` for those.
 - When writing unit tests, prefer to use pytest functionality (such as `parametrize`)
