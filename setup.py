@@ -68,6 +68,7 @@ def get_sources():
     tamp_path = base_path / ".." / "tamp" / "tamp" / "_c_src"
     lz4_path = base_path / ".." / "lz4" / "lib"
     tuz_path = base_path / ".." / "tinyuz"
+    brotli_path = base_path / ".." / "brotli" / "c"
 
     sources = []
 
@@ -148,6 +149,9 @@ def get_sources():
     # TINYUZ
     sources.extend((tuz_path / "compress").rglob("*.cpp"))
     sources.append(tuz_path / "decompress" / "tuz_dec.c")
+    # BROTLI
+    for part in ["common", "enc", "dec"]:
+        sources.extend((brotli_path / part).glob("*.c"))
 
     # LIBDEFLATE
     sources.extend(
@@ -173,6 +177,7 @@ def get_include_dirs():
     tamp_path = base_path / ".." / "tamp" / "tamp" / "_c_src"
     lz4_path = base_path / ".." / "lz4" / "lib"
     tuz_path = base_path / ".." / "tinyuz"
+    brotli_path = base_path / ".." / "brotli" / "c"
 
     return [
         "hdiffpatch",
@@ -194,6 +199,7 @@ def get_include_dirs():
         str(lz4_path),
         str(tuz_path / "compress"),
         str(tuz_path / "decompress"),
+        str(brotli_path / "include"),
     ]
 
 
@@ -224,6 +230,7 @@ def get_compile_args():
         "-D_CompressPlugin_lz4hc",
         "-DLZ4_DISABLE_DEPRECATE_WARNINGS",  # upstream plugin calls LZ4_resetStreamHC
         "-D_CompressPlugin_tuz",
+        "-D_CompressPlugin_brotli",
         "-DTAMP_LAZY_MATCHING=1",
     ]
 

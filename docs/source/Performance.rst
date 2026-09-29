@@ -55,7 +55,7 @@ tamp              40.5         1.1             15.1    110,711          16.6%
 Standard vs. lite
 ~~~~~~~~~~~~~~~~~~
 
-HPatchLite is HDiffPatch's tiny on-device applier format (``hpatch_lite_patch``), built for minimal device RAM/flash. :func:`hdiffpatch.diff_lite` and :func:`hdiffpatch.apply_lite` produce and consume it; it is **not** interchangeable with :func:`hdiffpatch.diff`/:func:`hdiffpatch.apply`. The trade-off is a slightly larger diff for a much smaller device-side footprint, which does not appear in host apply times. Every codec with a lite compress-type byte is supported (none/zlib/lzma/lzma2/zstd/bzip2/lz4/lz4hc/tuz/tamp); the table covers the ones small enough to decode on a microcontroller.
+HPatchLite is HDiffPatch's tiny on-device applier format (``hpatch_lite_patch``), built for minimal device RAM/flash. :func:`hdiffpatch.diff_lite` and :func:`hdiffpatch.apply_lite` produce and consume it; it is **not** interchangeable with :func:`hdiffpatch.diff`/:func:`hdiffpatch.apply`. The trade-off is a slightly larger diff for a much smaller device-side footprint, which does not appear in host apply times. Every codec with a lite compress-type byte is supported (none/zlib/lzma/lzma2/zstd/bzip2/lz4/lz4hc/tuz/brotli/tamp); the table covers the ones small enough to decode on a microcontroller.
 
 :func:`hdiffpatch.recompress_lite` is the lite counterpart of :func:`hdiffpatch.recompress`: it re-encodes an existing lite diff's body without redoing the match search, and for a diff made by :func:`hdiffpatch.diff_lite` its output is byte-identical to calling :func:`hdiffpatch.diff_lite` with the target codec. The *lite recompress* column times re-encoding a precomputed uncompressed lite diff, so to produce one lite diff under several codecs:
 
