@@ -197,6 +197,7 @@ def get_compile_args():
         "-D_ChecksumPlugin_md5",
         "-D_CompressPlugin_lzma",
         "-D_CompressPlugin_lzma2",
+        "-D_CompressPlugin_7zXZ",
         "-D_CompressPlugin_zstd",
         "-DZSTD_HAVE_WEAK_SYMBOLS=0",
         "-DZSTD_TRACE=0",

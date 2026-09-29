@@ -8,9 +8,11 @@ __all__ = [
     "COMPRESSION_LZMA2",
     "COMPRESSION_NONE",
     "COMPRESSION_TAMP",
+    "COMPRESSION_XZ",
     "COMPRESSION_ZLIB",
     "COMPRESSION_ZSTD",
     "CompressionType",
+    "LiteCompressionType",
     # Exceptions
     "HDiffPatchError",
     # Core functions
@@ -28,6 +30,7 @@ __all__ = [
     "LzmaConfig",
     "Lzma2Config",
     "TampConfig",
+    "XzConfig",
     "ZStdConfig",
 ]
 
@@ -44,11 +47,13 @@ from ._c_extension import (
     COMPRESSION_LZMA2,
     COMPRESSION_NONE,
     COMPRESSION_TAMP,
+    COMPRESSION_XZ,
     COMPRESSION_ZLIB,
     COMPRESSION_ZSTD,
     CompressionType,
     # Exceptions
     HDiffPatchError,
+    LiteCompressionType,
     # Core functions
     apply,
     apply_lite,
@@ -63,6 +68,9 @@ from ._lzma_config import (
 )
 from ._tamp_config import (
     TampConfig,
+)
+from ._xz_config import (
+    XzConfig,
 )
 from ._zlib_config import (
     ZlibConfig,

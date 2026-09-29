@@ -135,6 +135,14 @@ def test_recompress_lite_preserves_inplace_header(target, large_repetitive_data)
     assert recompress_lite(result, None) == inplace
 
 
+@pytest.mark.parametrize("compression", [hdiffpatch.COMPRESSION_XZ, hdiffpatch.XzConfig()], ids=repr)
+def test_recompress_lite_rejects_unsupported_codec(compression, simple_text_data):
+    """Codecs with no lite compress-type byte are rejected, as in diff_lite."""
+    lite = diff_lite(simple_text_data["old"], simple_text_data["new"])
+    with pytest.raises(HDiffPatchError, match="not supported by HPatchLite"):
+        recompress_lite(lite, compression)
+
+
 def test_recompress_lite_invalid_compression_type(simple_text_data):
     """An unknown codec name raises ValueError."""
     lite = diff_lite(simple_text_data["old"], simple_text_data["new"])

@@ -3,6 +3,7 @@
 import subprocess
 import sys
 import textwrap
+from typing import get_args
 
 import pytest
 
@@ -36,6 +37,19 @@ LITE_HEADER_TAG = {
     hdiffpatch.COMPRESSION_BZIP2: 0x06,
     hdiffpatch.COMPRESSION_TAMP: 0xF0,
 }
+
+# Valid HDiffPatch codecs with no lite compress-type byte, which must be rejected.
+LITE_UNSUPPORTED = [
+    hdiffpatch.COMPRESSION_XZ,
+]
+
+
+def test_lite_compression_type_matches_runtime():
+    """LiteCompressionType lists exactly the codecs the lite functions accept."""
+    lite_types = set(get_args(hdiffpatch.LiteCompressionType))
+
+    assert lite_types == set(LITE_SUPPORTED)
+    assert lite_types | set(LITE_UNSUPPORTED) == set(get_args(hdiffpatch.CompressionType))
 
 
 def test_diff_lite_basic(simple_text_data):
@@ -136,6 +150,13 @@ def test_diff_lite_rejects_unknown_config(simple_text_data):
 
     with pytest.raises(hdiffpatch.HDiffPatchError, match="Unsupported compression config"):
         diff_lite(simple_text_data["old"], simple_text_data["new"], compression=UnknownConfig())
+
+
+@pytest.mark.parametrize("compression", [*LITE_UNSUPPORTED, hdiffpatch.XzConfig()], ids=repr)
+def test_diff_lite_rejects_unsupported_codec(compression, simple_text_data):
+    """Codecs with no lite compress-type byte are rejected with a clear error."""
+    with pytest.raises(hdiffpatch.HDiffPatchError, match="not supported by HPatchLite"):
+        diff_lite(simple_text_data["old"], simple_text_data["new"], compression=compression)
 
 
 def test_diff_lite_invalid_compression_type(simple_text_data):

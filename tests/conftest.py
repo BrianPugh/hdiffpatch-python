@@ -64,6 +64,7 @@ def compression_types():
         hdiffpatch.COMPRESSION_LZMA2,
         hdiffpatch.COMPRESSION_BZIP2,
         hdiffpatch.COMPRESSION_TAMP,
+        hdiffpatch.COMPRESSION_XZ,
     ]
 
 
@@ -78,6 +79,7 @@ def all_compression_types():
         hdiffpatch.COMPRESSION_LZMA2,
         hdiffpatch.COMPRESSION_BZIP2,
         hdiffpatch.COMPRESSION_TAMP,
+        hdiffpatch.COMPRESSION_XZ,
     ]
 
 
