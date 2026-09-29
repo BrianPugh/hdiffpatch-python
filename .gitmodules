@@ -22,3 +22,6 @@
 [submodule "hdiffpatch/_c_src/tamp"]
 	path = hdiffpatch/_c_src/tamp
 	url = https://github.com/BrianPugh/tamp.git
+[submodule "hdiffpatch/_c_src/lz4"]
+	path = hdiffpatch/_c_src/lz4
+	url = https://github.com/lz4/lz4.git

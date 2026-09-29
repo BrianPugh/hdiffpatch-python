@@ -66,6 +66,7 @@ def get_sources():
     zlib_path = base_path / ".." / "zlib"
     ldef_path = base_path / ".." / "libdeflate"
     tamp_path = base_path / ".." / "tamp" / "tamp" / "_c_src"
+    lz4_path = base_path / ".." / "lz4" / "lib"
 
     sources = []
 
@@ -141,6 +142,9 @@ def get_sources():
     zlib_sources = ["adler32.c", "crc32.c", "inffast.c", "inflate.c", "inftrees.c", "trees.c", "zutil.c", "deflate.c"]
     sources.extend([zlib_path / s for s in zlib_sources])
 
+    # LZ4
+    sources.extend([lz4_path / "lz4.c", lz4_path / "lz4hc.c"])
+
     # LIBDEFLATE
     sources.extend(
         [
@@ -163,6 +167,7 @@ def get_include_dirs():
     zlib_path = base_path / ".." / "zlib"
     ldef_path = base_path / ".." / "libdeflate"
     tamp_path = base_path / ".." / "tamp" / "tamp" / "_c_src"
+    lz4_path = base_path / ".." / "lz4" / "lib"
 
     return [
         "hdiffpatch",
@@ -181,6 +186,7 @@ def get_include_dirs():
         str(bz2_path),
         str(zlib_path),
         str(ldef_path),
+        str(lz4_path),
     ]
 
 
@@ -207,6 +213,9 @@ def get_compile_args():
         "-D_CompressPlugin_zlib",
         "-D_CompressPlugin_ldef",
         "-D_CompressPlugin_ldef_is_use_zlib",
+        "-D_CompressPlugin_lz4",
+        "-D_CompressPlugin_lz4hc",
+        "-DLZ4_DISABLE_DEPRECATE_WARNINGS",  # upstream plugin calls LZ4_resetStreamHC
         "-DTAMP_LAZY_MATCHING=1",
     ]
 

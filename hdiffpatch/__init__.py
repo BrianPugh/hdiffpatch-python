@@ -4,6 +4,8 @@ __version__ = "0.0.0"
 __all__ = [
     # Types and constants
     "COMPRESSION_BZIP2",
+    "COMPRESSION_LZ4",
+    "COMPRESSION_LZ4HC",
     "COMPRESSION_LZMA",
     "COMPRESSION_LZMA2",
     "COMPRESSION_NONE",
@@ -27,6 +29,8 @@ __all__ = [
     "BZip2Config",
     "ZlibConfig",
     "ZlibStrategy",
+    "Lz4Config",
+    "Lz4HCConfig",
     "LzmaConfig",
     "Lzma2Config",
     "TampConfig",
@@ -43,6 +47,8 @@ from ._bzip2_config import (
 from ._c_extension import (
     # Types and constants
     COMPRESSION_BZIP2,
+    COMPRESSION_LZ4,
+    COMPRESSION_LZ4HC,
     COMPRESSION_LZMA,
     COMPRESSION_LZMA2,
     COMPRESSION_NONE,
@@ -61,6 +67,10 @@ from ._c_extension import (
     diff_lite,
     recompress,
     recompress_lite,
+)
+from ._lz4_config import (
+    Lz4Config,
+    Lz4HCConfig,
 )
 from ._lzma_config import (
     Lzma2Config,
