@@ -6,6 +6,7 @@ import pytest
 
 import hdiffpatch
 from hdiffpatch import (
+    BrotliConfig,
     BZip2Config,
     HDiffPatchError,
     Lz4Config,
@@ -33,6 +34,7 @@ LITE_TARGETS = [
     hdiffpatch.COMPRESSION_LZ4,
     hdiffpatch.COMPRESSION_LZ4HC,
     hdiffpatch.COMPRESSION_TUZ,
+    hdiffpatch.COMPRESSION_BROTLI,
     ZlibConfig(window=9),
     ZlibConfig.fast(),
     LzmaConfig(window=12),
@@ -44,6 +46,7 @@ LITE_TARGETS = [
     TampConfig(window=12, lazy_matching=False),
     Lz4Config.fast(),
     Lz4HCConfig.best_compression(),
+    BrotliConfig.fast(),
 ]
 
 LITE_SOURCES = [
@@ -56,6 +59,7 @@ LITE_SOURCES = [
     hdiffpatch.COMPRESSION_TAMP,
     hdiffpatch.COMPRESSION_LZ4,
     hdiffpatch.COMPRESSION_TUZ,
+    hdiffpatch.COMPRESSION_BROTLI,
 ]
 
 
@@ -183,7 +187,7 @@ def test_recompress_lite_rejects_garbage_header(garbage):
         recompress_lite(garbage, "zlib")
 
 
-@pytest.mark.parametrize("source", ["zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp", "lz4", "tuz"])
+@pytest.mark.parametrize("source", ["zlib", "lzma", "lzma2", "zstd", "bzip2", "tamp", "lz4", "tuz", "brotli"])
 def test_recompress_lite_rejects_corrupt_body(source, large_repetitive_data):
     """A truncated compressed body raises HDiffPatchError."""
     lite = diff_lite(large_repetitive_data["old"], large_repetitive_data["new"], compression=source)

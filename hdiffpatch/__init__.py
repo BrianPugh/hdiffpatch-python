@@ -3,6 +3,7 @@ __version__ = "0.0.0"
 
 __all__ = [
     # Types and constants
+    "COMPRESSION_BROTLI",
     "COMPRESSION_BZIP2",
     "COMPRESSION_LZ4",
     "COMPRESSION_LZ4HC",
@@ -27,6 +28,7 @@ __all__ = [
     "recompress_lite",
     # Configuration classes
     "BaseConfig",
+    "BrotliConfig",
     "BZip2Config",
     "ZlibConfig",
     "ZlibStrategy",
@@ -43,11 +45,15 @@ __all__ = [
 from ._base_config import (
     BaseConfig,
 )
+from ._brotli_config import (
+    BrotliConfig,
+)
 from ._bzip2_config import (
     BZip2Config,
 )
 from ._c_extension import (
     # Types and constants
+    COMPRESSION_BROTLI,
     COMPRESSION_BZIP2,
     COMPRESSION_LZ4,
     COMPRESSION_LZ4HC,
