@@ -27,7 +27,7 @@
 	url = https://github.com/lz4/lz4.git
 [submodule "hdiffpatch/_c_src/tinyuz"]
 	path = hdiffpatch/_c_src/tinyuz
-	url = https://github.com/sisong/tinyuz.git
+	url = https://github.com/BrianPugh/tinyuz.git
 [submodule "hdiffpatch/_c_src/brotli"]
 	path = hdiffpatch/_c_src/brotli
 	url = https://github.com/google/brotli.git
