@@ -81,7 +81,7 @@ class TestTampConfigClassmethods:
             (
                 "best_compression",
                 {
-                    "window": 15,
+                    "window": 12,
                     "lazy_matching": True,
                 },
             ),
@@ -89,7 +89,7 @@ class TestTampConfigClassmethods:
                 "minimal_memory",
                 {
                     "window": 8,
-                    "lazy_matching": True,
+                    "lazy_matching": False,
                 },
             ),
         ],
