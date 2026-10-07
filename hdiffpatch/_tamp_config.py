@@ -89,7 +89,9 @@ class TampConfig(BaseConfig):
         TampConfig
             Configuration optimized for best compression
         """
-        return cls(window=15)
+        # Larger windows spend more bits per match; on firmware diffs size bottoms out at 12
+        # and grows past it, while compression time roughly doubles per step.
+        return cls(window=12)
 
     @classmethod
     def minimal_memory(cls) -> "TampConfig":
@@ -100,4 +102,4 @@ class TampConfig(BaseConfig):
         TampConfig
             Configuration with minimal memory usage
         """
-        return cls(window=8)
+        return cls(window=8, lazy_matching=False)

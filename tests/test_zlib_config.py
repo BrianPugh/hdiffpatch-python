@@ -142,8 +142,8 @@ class TestZlibConfigClassmethods:
                 "fast",
                 {
                     "level": 1,
-                    "memory_level": 1,
-                    "window": 9,
+                    "memory_level": 8,
+                    "window": 12,
                     "strategy": ZlibStrategy.DEFAULT,
                     "save_window_bits": True,
                 },
@@ -162,7 +162,7 @@ class TestZlibConfigClassmethods:
                 "best_compression",
                 {
                     "level": 9,
-                    "memory_level": 9,
+                    "memory_level": 8,
                     "window": 15,
                     "strategy": ZlibStrategy.DEFAULT,
                     "save_window_bits": True,
@@ -172,7 +172,7 @@ class TestZlibConfigClassmethods:
                 "minimal_memory",
                 {
                     "level": 6,
-                    "memory_level": 1,
+                    "memory_level": 8,
                     "window": 9,
                     "strategy": ZlibStrategy.DEFAULT,
                     "save_window_bits": True,
