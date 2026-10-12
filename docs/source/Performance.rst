@@ -32,7 +32,7 @@ The default stays ``False`` to keep the upstream default and the existing memory
 Benchmarks
 ----------
 
-Diffing two consecutive MicroPython RPI_PICO firmware releases (~650 KB each, best of 5 runs, Apple M3 MacBook Pro). Each compression type uses its default settings. Absolute times vary by machine and input; the ratios are the point. Regenerate with ``uv run python tools/benchmark.py``.
+Diffing two consecutive MicroPython RPI_PICO firmware releases (~650 KB each, best of 5 runs, Apple M3 MacBook Air). Each compression type uses its default settings. Absolute times vary by machine and input; the ratios are the point. Regenerate with ``uv run python tools/benchmark.py``.
 
 * **diff** — create the compressed diff from scratch: :func:`hdiffpatch.diff` with ``validate=False``.
 * **apply** — apply that diff to the old file with :func:`hdiffpatch.apply`.
@@ -42,22 +42,22 @@ Diffing two consecutive MicroPython RPI_PICO firmware releases (~650 KB each, be
 ===========  =========  ==========  ===============  =========  =============
 compression  diff (ms)  apply (ms)  recompress (ms)  diff size  % of new file
 ===========  =========  ==========  ===============  =========  =============
-none              26.1         0.4                —    161,041          24.1%
-zlib              31.6         0.9              5.3     99,772          14.9%
-lzma              38.1         3.3             11.5     92,647          13.9%
-lzma2             38.1         3.3             11.7     92,656          13.9%
-xz                38.6         3.7             12.1     92,865          13.9%
-zstd              42.8         0.6             16.5     97,520          14.6%
-bzip2             35.4         4.2              9.1    102,686          15.4%
-brotli            30.2         1.0              3.9     98,925          14.8%
-lzham             40.2         1.5             13.7     97,500          14.6%
-lz4               26.5         0.4              0.1    131,067          19.6%
-lz4hc             28.9         0.5              2.5    120,571          18.1%
-tuz               42.9         1.1             16.6    104,363          15.6%
-tamp              42.7         1.1             16.3    110,711          16.6%
+none              26.4         0.5                —    161,041          24.1%
+zlib              33.7         1.1              5.6     99,772          14.9%
+lzma              37.9         3.4             11.9     92,647          13.9%
+lzma2             40.0         3.8             12.0     92,656          13.9%
+xz                39.1         3.7             11.8     92,865          13.9%
+zstd              43.8         0.6             17.0     97,520          14.6%
+bzip2             36.3         4.3              9.2    102,686          15.4%
+brotli            30.8         1.1              3.6     98,925          14.8%
+lzham             40.2         1.6             13.0     97,500          14.6%
+lz4               27.3         0.5              0.1    131,067          19.6%
+lz4hc             30.2         0.5              2.7    120,571          18.1%
+tuz               44.3         1.2             16.8    104,363          15.6%
+tamp              33.0         1.2              5.8    110,711          16.6%
 ===========  =========  ==========  ===============  =========  =============
 
-``validate=True`` measured 27.0 ms against 26.3 ms with ``validate=False`` (uncompressed diff) — a few percent of overhead.
+``validate=True`` measured 29.6 ms against 28.6 ms with ``validate=False`` (uncompressed diff) — a few percent of overhead.
 
 Standard vs. lite
 ~~~~~~~~~~~~~~~~~~
@@ -75,13 +75,13 @@ HPatchLite is HDiffPatch's tiny on-device applier format (``hpatch_lite_patch``)
 ===========  =============  ==============  ====================  ==============  ===============  ========  =========  ========
 compression  std diff (ms)  lite diff (ms)  lite recompress (ms)  std apply (ms)  lite apply (ms)  std size  lite size  lite/std
 ===========  =============  ==============  ====================  ==============  ===============  ========  =========  ========
-none                  26.2            25.9                     —             0.4              0.2   161,041    637,195    395.7%
-zlib                  31.8           128.2                 102.1             1.0              0.9    99,772    106,275    106.5%
-lzma                  38.3            66.2                  39.3             3.3              3.1    92,647     96,859    104.5%
-lz4                   26.6            26.5                   0.4             0.4              0.3   131,067    148,758    113.5%
-lz4hc                 28.9           110.4                  84.0             0.5              0.2   120,571    121,172    100.5%
-tuz                   43.2            72.2                  45.9             1.1              1.9   104,363    105,910    101.5%
-tamp                  42.8            64.6                  39.1             1.2              1.4   110,711    125,726    113.6%
+none                  27.2            26.9                     —             0.5              0.2   161,041    637,195    395.7%
+zlib                  33.8           141.0                 111.7             1.0              1.0    99,772    106,275    106.5%
+lzma                  39.8            68.0                  40.8             3.7              3.4    92,647     96,859    104.5%
+lz4                   28.2            27.6                   0.4             0.5              0.3   131,067    148,758    113.5%
+lz4hc                 29.9           135.7                 114.5             0.6              0.3   120,571    121,172    100.5%
+tuz                   46.6            73.4                  46.5             1.2              2.1   104,363    105,910    101.5%
+tamp                  33.0            39.0                  10.7             1.3              1.5   110,711    125,726    113.6%
 ===========  =============  ==============  ====================  ==============  ===============  ========  =========  ========
 
 The ``none`` row is a ~4x outlier because the uncompressed lite encoding stores many literal new-data bytes; with a codec those literals compress and the gap collapses to ~0.5-14%, so lite should be used with compression.
@@ -89,9 +89,9 @@ The ``none`` row is a ~4x outlier because the uncompressed lite encoding stores 
 Firmware presets
 ~~~~~~~~~~~~~~~~
 
-Each codec's ``fast``/``balanced``/``best_compression``/``minimal_memory`` preset, applied with :func:`hdiffpatch.recompress` to the uncompressed diff between the MicroPython v1.25.0 and v1.26.0 images of four boards (best of 3 runs, Apple M3 MacBook Pro). The *full image* row is the new image compressed on its own with ``LzmaConfig.best_compression()``, i.e. what shipping the whole image instead of a diff would cost. Regenerate with ``uv run python tools/benchmark_firmware.py``, which downloads the images on first use.
+Each codec's ``fast``/``balanced``/``best_compression``/``minimal_memory`` preset, applied with :func:`hdiffpatch.recompress` to the uncompressed diff between the MicroPython v1.25.0 and v1.26.0 images of four boards (best of 3 runs, Apple M3 MacBook Air). The *full image* row is the new image compressed on its own with ``LzmaConfig.best_compression()``, i.e. what shipping the whole image instead of a diff would cost. Regenerate with ``uv run python tools/benchmark_firmware.py``, which downloads the images on first use.
 
-* A codec's ``window`` sets how much RAM its decoder needs on the device, but a bigger window doesn't always mean a smaller diff: tamp's size bottoms out at ``window=12`` on these images and grows past it, while each step roughly doubles compression time. The presets are tuned so you don't have to pick one.
+* A codec's ``window`` sets how much RAM its decoder needs on the device, but a bigger window doesn't always mean a smaller diff: tamp's size bottoms out at ``window=12`` on these images and grows past it, while each step adds 20-40% to compression time. The presets are tuned so you don't have to pick one.
 * ``brotli`` ``best_compression`` takes ~2.3 s on the ~1.7 MB images, about 100x its ``balanced`` preset, for diffs ~3 points smaller.
 * ``zstd`` and ``brotli`` ``fast``/``balanced`` and ``lz4`` recompress in single-digit milliseconds; the ``lzma`` family gives the smallest diffs at every preset.
 
@@ -157,52 +157,52 @@ Recompress time (ms):
 ======  ================  ========================  ===========================  =====================  ===============
 codec   preset            ESP32_GENERIC (1,694 KB)  ESP32_GENERIC_S3 (1,692 KB)  RPI_PICO_W (1,709 KB)  PYBV11 (359 KB)
 ======  ================  ========================  ===========================  =====================  ===============
-zlib                fast                      11.6                         11.7                    1.9              0.8
-zlib            balanced                      34.6                         34.2                    5.0              2.2
-zlib    best_compression                      48.7                         43.4                    9.7              6.1
-zlib      minimal_memory                      12.7                         12.6                    2.4              1.2
-lzma                fast                      34.2                         34.7                    5.1              2.3
-lzma            balanced                      64.3                         64.6                   14.7              8.2
-lzma    best_compression                      65.6                         65.8                   16.2              8.9
-lzma      minimal_memory                      60.2                         60.0                   14.4              7.8
-lzma2               fast                      34.9                         35.4                    5.4              2.8
-lzma2           balanced                      64.8                         65.0                   14.8              8.1
-lzma2   best_compression                      66.0                         66.3                   16.2              8.7
-lzma2     minimal_memory                      60.7                         60.3                   14.6              7.9
-xz                  fast                      34.8                         35.1                    5.3              2.5
-xz              balanced                      64.7                         65.2                   14.9              8.4
-xz      best_compression                      66.5                         66.8                   17.0              9.4
-xz        minimal_memory                      60.9                         60.4                   14.6              7.8
-zstd                fast                       1.5                          1.5                    0.3              0.2
-zstd            balanced                       8.2                          8.3                    1.6              0.8
-zstd    best_compression                      76.1                         73.6                   30.0             10.4
-zstd      minimal_memory                       6.2                          6.2                    1.1              0.4
-bzip2               fast                      59.2                         59.3                   13.1              6.8
-bzip2           balanced                      57.9                         58.1                   13.3              7.3
-bzip2   best_compression                      58.0                         58.2                   13.4              7.3
-bzip2     minimal_memory                      59.2                         59.1                   13.0              7.0
-brotli              fast                       4.3                          4.3                    0.7              0.3
-brotli          balanced                      21.5                         21.8                    3.3              1.6
-brotli  best_compression                    2429.9                       2497.9                  288.2             95.0
-brotli    minimal_memory                      12.9                         13.1                    2.6              1.4
-lzham               fast                      71.5                         72.6                   13.5              6.4
-lzham           balanced                      93.2                         96.9                   21.2             10.3
-lzham   best_compression                     161.6                        154.2                  138.7             47.3
-lzham     minimal_memory                      88.7                         87.8                   25.3             12.4
-lz4                 fast                       0.3                          0.3                    0.0              0.0
-lz4             balanced                       0.5                          0.5                    0.1              0.0
-lz4     best_compression                       1.0                          1.0                    0.3              0.1
-lz4       minimal_memory                       1.0                          1.0                    0.3              0.1
-lz4hc               fast                      13.8                         14.2                    1.4              0.5
-lz4hc           balanced                      19.0                         18.5                    2.7              1.3
-lz4hc   best_compression                      32.7                         30.3                    5.9              3.6
-lz4hc     minimal_memory                      29.0                         27.3                    4.6              2.7
-tuz                 fast                     125.4                        124.5                   25.7             12.2
-tuz             balanced                     152.3                        153.6                   25.9             12.2
-tuz     best_compression                     153.5                        155.0                   26.0             12.2
-tuz       minimal_memory                     101.6                        100.3                   24.1             11.6
-tamp                fast                      33.5                         34.2                    5.7              2.5
-tamp            balanced                     111.3                        112.9                   18.7              8.3
-tamp    best_compression                     322.3                        328.6                   52.2             23.3
-tamp      minimal_memory                      34.1                         34.3                    5.6              2.5
+zlib                fast                      13.6                         12.4                    1.8              0.7
+zlib            balanced                      35.2                         35.5                    5.2              2.3
+zlib    best_compression                      49.1                         43.9                    9.9              6.1
+zlib      minimal_memory                      13.0                         13.0                    2.6              1.2
+lzma                fast                      33.8                         33.7                    4.9              2.2
+lzma            balanced                      62.6                         61.9                   13.6              7.2
+lzma    best_compression                      63.1                         62.5                   15.4              8.0
+lzma      minimal_memory                      58.5                         58.6                   14.2              7.5
+lzma2               fast                      33.2                         33.8                    5.0              2.2
+lzma2           balanced                      62.7                         62.4                   13.9              7.3
+lzma2   best_compression                      64.0                         66.6                   15.6              8.1
+lzma2     minimal_memory                      60.4                         59.0                   14.3              7.6
+xz                  fast                      34.4                         35.5                    5.1              2.3
+xz              balanced                      63.1                         63.9                   14.0              7.3
+xz      best_compression                      64.1                         64.1                   15.6              8.1
+xz        minimal_memory                      60.4                         59.3                   14.2              7.6
+zstd                fast                       1.3                          1.3                    0.3              0.1
+zstd            balanced                       8.2                          8.2                    1.5              0.7
+zstd    best_compression                      78.0                         84.3                   29.2             10.0
+zstd      minimal_memory                       6.0                          6.1                    1.1              0.4
+bzip2               fast                      57.9                         59.1                   12.8              6.7
+bzip2           balanced                      56.5                         57.4                   12.8              6.7
+bzip2   best_compression                      56.8                         57.3                   12.9              6.8
+bzip2     minimal_memory                      58.1                         58.7                   12.8              6.7
+brotli              fast                       4.3                          4.2                    0.7              0.3
+brotli          balanced                      21.1                         21.5                    3.2              1.4
+brotli  best_compression                    2413.8                       2531.3                  287.2             94.8
+brotli    minimal_memory                      12.8                         12.3                    2.4              1.1
+lzham               fast                      67.8                         69.9                   12.2              5.2
+lzham           balanced                      92.6                         87.4                   18.9              8.1
+lzham   best_compression                     179.2                        171.3                  133.5             43.1
+lzham     minimal_memory                      87.2                         85.3                   23.9             11.0
+lz4                 fast                       0.2                          0.1                    0.0              0.0
+lz4             balanced                       0.3                          0.3                    0.1              0.0
+lz4     best_compression                       0.8                          0.8                    0.2              0.1
+lz4       minimal_memory                       0.8                          0.8                    0.2              0.1
+lz4hc               fast                      12.5                         12.8                    1.4              0.5
+lz4hc           balanced                      18.7                         18.1                    2.6              1.2
+lz4hc   best_compression                      30.9                         29.1                    5.8              3.6
+lz4hc     minimal_memory                      28.0                         26.6                    4.9              2.6
+tuz                 fast                     125.3                        122.2                   25.4             11.9
+tuz             balanced                     147.3                        154.0                   25.7             12.2
+tuz     best_compression                     153.8                        152.5                   25.1             12.1
+tuz       minimal_memory                     103.5                         98.2                   23.9             11.2
+tamp                fast                      21.6                         22.4                    4.8              2.5
+tamp            balanced                      34.6                         32.5                    8.4              4.5
+tamp    best_compression                      44.9                         46.1                   13.6              8.0
+tamp      minimal_memory                      21.5                         22.4                    4.6              2.4
 ======  ================  ========================  ===========================  =====================  ===============

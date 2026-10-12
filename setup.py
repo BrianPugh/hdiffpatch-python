@@ -248,6 +248,10 @@ def get_compile_args():
         "-DTAMP_LAZY_MATCHING=1",
     ]
 
+    # tamp's match index only builds with its 64-bit desktop match finder.
+    if sys.maxsize > 2**32 and platform.machine().lower() in ("x86_64", "amd64", "aarch64", "arm64"):
+        common_defines.append("-DTAMP_MATCH_INDEX=1")
+
     extra_compile_args = common_defines[:]
 
     if platform.system() == "Windows":
