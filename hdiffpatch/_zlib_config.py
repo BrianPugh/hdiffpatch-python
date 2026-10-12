@@ -129,7 +129,7 @@ class ZlibConfig(BaseConfig):
         ZlibConfig
             Configuration optimized for speed
         """
-        return cls(level=1, memory_level=1, window=9)
+        return cls(level=1, memory_level=8, window=12)
 
     @classmethod
     def balanced(cls) -> "ZlibConfig":
@@ -151,7 +151,7 @@ class ZlibConfig(BaseConfig):
         ZlibConfig
             Configuration optimized for best compression
         """
-        return cls(level=9, memory_level=9, window=15)
+        return cls(level=9, memory_level=8, window=15)
 
     @classmethod
     def minimal_memory(cls) -> "ZlibConfig":
@@ -162,7 +162,9 @@ class ZlibConfig(BaseConfig):
         ZlibConfig
             Configuration with minimal memory usage
         """
-        return cls(level=6, memory_level=1, window=9)
+        # Only window sets the decoder's RAM; memory_level is compressor-side, and lowering it
+        # made firmware diffs ~4x slower to compress and ~15% larger.
+        return cls(level=6, memory_level=8, window=9)
 
     @classmethod
     def png_optimized(cls) -> "ZlibConfig":

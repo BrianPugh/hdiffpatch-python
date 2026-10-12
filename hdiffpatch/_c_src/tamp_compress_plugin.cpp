@@ -32,6 +32,7 @@ static hpatch_StreamPos_t _tamp_compress(const hdiff_TCompress* compressPlugin,
     unsigned char* read_buf = 0;
     unsigned char* compress_buf = 0;
     unsigned char* window_buf = 0;
+    void* match_index_buf = 0;
     TampCompressor compressor;
 
     // Get configuration from custom plugin or use defaults
@@ -67,6 +68,13 @@ static hpatch_StreamPos_t _tamp_compress(const hdiff_TCompress* compressPlugin,
     // Initialize Tamp compressor
     res = tamp_compressor_init(&compressor, &conf, window_buf);
     if (res != TAMP_OK) _compress_error_return("tamp_compressor_init");
+
+#if TAMP_MATCH_INDEX
+    // Optional hash-chain index: faster compression, byte-identical output.
+    match_index_buf = malloc(TAMP_MATCH_INDEX_SIZE(conf.window));
+    if (!match_index_buf) _compress_error_return("match index alloc");
+    tamp_compressor_set_match_index(&compressor, match_index_buf);
+#endif
 
     // Let Tamp write its own header during compression - no manual header needed
 
@@ -124,6 +132,7 @@ clear:
     if (read_buf) free(read_buf);
     if (compress_buf) free(compress_buf);
     if (window_buf) free(window_buf);
+    if (match_index_buf) free(match_index_buf);
     return result;
 }
 

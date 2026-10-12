@@ -146,7 +146,7 @@ class TestLzmaConfigClassmethods:
                 {
                     "level": 6,
                     "window": 23,
-                    "threads": 1,
+                    "threads": 2,
                 },
             ),
             (

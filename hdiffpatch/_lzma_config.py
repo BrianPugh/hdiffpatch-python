@@ -84,7 +84,7 @@ class LzmaConfig(BaseConfig):
         LzmaConfig
             Configuration with balanced speed/compression tradeoff
         """
-        return cls(level=6, window=23, threads=1)
+        return cls(level=6, window=23, threads=2)
 
     @classmethod
     def best_compression(cls) -> "LzmaConfig":
